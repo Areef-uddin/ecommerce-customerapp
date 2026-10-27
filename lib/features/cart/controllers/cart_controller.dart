@@ -88,4 +88,14 @@ class CartController extends GetxController {
       isApplyingCoupon.value = false;
     }
   }
+
+  Future<void> clearCart() async {
+    try {
+      await ApiClient.delete(ApiEndpoints.clearCart);
+      cartItems.clear();
+      fetchCart();
+    } catch (e) {
+      debugPrint('Error clearing cart: $e');
+    }
+  }
 }

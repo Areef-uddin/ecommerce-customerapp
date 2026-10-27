@@ -49,11 +49,42 @@ class _CartViewState extends State<CartView> {
           ),
         ),
         actions: [
+          Obx(() {
+            if (controller.cartItems.isNotEmpty) {
+              return TextButton(
+                onPressed: () {
+                  Get.defaultDialog(
+                    title: 'Clear Bag',
+                    titleStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                    middleText: 'Are you sure you want to remove all items from your shopping bag?',
+                    textConfirm: 'Clear All',
+                    textCancel: 'Cancel',
+                    confirmTextColor: Colors.white,
+                    buttonColor: const Color(0xFFE11D48),
+                    onConfirm: () {
+                      Get.back();
+                      controller.clearCart();
+                    },
+                  );
+                },
+                child: const Text(
+                  'Clear All',
+                  style: TextStyle(
+                    color: Color(0xFFE11D48),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
+            icon: const Icon(Icons.refresh, color: AppColors.textPrimary, size: 20),
             tooltip: 'Refresh Bag',
             onPressed: () => controller.fetchCart(),
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Obx(() {

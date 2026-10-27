@@ -244,7 +244,97 @@ class ProfileView extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // 4. Logout Card
+              // 4. Flagship Store & Customer Care (matching Reference 2)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFEEEEEE)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.storefront_rounded, color: AppColors.primary, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'StyleHub Flagship & Care',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.textPrimary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Icons.phone_outlined, size: 18, color: Color(0xFF0F172A)),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('+91 98765 43210', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                              Text('Mon - Sat: 09:00 AM - 08:00 PM', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Icons.email_outlined, size: 18, color: Color(0xFF0F172A)),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('concierge@stylehub.com', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                              Text('VIP Priority Support', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFF0F172A)),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('100 Feet Rd, Indiranagar, Bengaluru', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                              Text('Open today: 10:00 AM - 10:00 PM', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 5. Logout Card
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,

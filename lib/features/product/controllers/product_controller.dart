@@ -20,8 +20,17 @@ class ProductController extends GetxController {
   final selectedColorIndex = 0.obs;
   final selectedSize = 'M'.obs;
   final currentImageIndex = 0.obs;
+  final quantity = 1.obs;
   final isAddingToCart = false.obs;
   final isWishlisting = false.obs;
+
+  void incrementQuantity() {
+    if (quantity.value < 10) quantity.value++;
+  }
+
+  void decrementQuantity() {
+    if (quantity.value > 1) quantity.value--;
+  }
 
   // Size Guide State
   final sizeGuideCategory = 'Women'.obs;
@@ -94,7 +103,7 @@ class ProductController extends GetxController {
 
       await ApiClient.post(ApiEndpoints.cart, data: {
         'product_id': product.id,
-        'quantity': 1,
+        'quantity': quantity.value,
         'size': selectedSize.value,
         'color': colorName,
       });
@@ -168,7 +177,7 @@ class ProductController extends GetxController {
 
       await ApiClient.post(ApiEndpoints.cart, data: {
         'product_id': product.id,
-        'quantity': 1,
+        'quantity': quantity.value,
         'size': selectedSize.value,
         'color': colorName,
       });
