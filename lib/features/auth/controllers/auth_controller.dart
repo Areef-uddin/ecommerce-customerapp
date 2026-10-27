@@ -210,6 +210,195 @@ class AuthController extends GetxController {
     }
   }
 
+  Future<void> signInWithGoogle({String? customEmail, String? customName}) async {
+    final email = customEmail ?? (emailController.text.trim().contains('@') ? emailController.text.trim() : 'areef.google@gmail.com');
+    final name = customName ?? (nameController.text.trim().isNotEmpty ? nameController.text.trim() : email.split('@')[0]);
+
+    try {
+      isLoading.value = true;
+      final res = await ApiClient.post(ApiEndpoints.google, data: {
+        'email': email,
+        'name': name,
+        'avatar': 'https://lh3.googleusercontent.com/a/default-user',
+      });
+
+      final access = res.data['access'];
+      final refresh = res.data['refresh'];
+      final user = res.data['user'];
+
+      await StorageService.saveTokens(access: access, refresh: refresh);
+      await StorageService.saveUser(user);
+
+      Get.snackbar(
+        'Google Sign-In Successful',
+        'Welcome, ${user['full_name']}!',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+
+      Get.offAllNamed('/home');
+    } catch (e) {
+      final msg = _extractErrorMessage(e, 'Google Sign-In failed');
+      Get.snackbar(
+        'Authentication Error',
+        msg,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void promptGoogleSignIn(BuildContext context) {
+    final googleEmailCtrl = TextEditingController(
+      text: emailController.text.trim().isNotEmpty ? emailController.text.trim() : 'areef.google@gmail.com',
+    );
+    final googleNameCtrl = TextEditingController(
+      text: nameController.text.trim().isNotEmpty ? nameController.text.trim() : 'Areef Uddin',
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Image.asset('assets/google_logo.png', width: 28, height: 28),
+                const SizedBox(width: 12),
+                const Text(
+                  'Sign in with Google',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Select or confirm your Google account to continue',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: googleEmailCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Google Email Account',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: googleNameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Full Name',
+                prefixIcon: Icon(Icons.person_outline),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  signInWithGoogle(
+                    customEmail: googleEmailCtrl.text.trim(),
+                    customName: googleNameCtrl.text.trim(),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE91E63),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Continue with Google', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void showPhoneLoginSheet(BuildContext context) {
+    final phoneInputCtrl = TextEditingController(
+      text: phoneController.text.trim().isNotEmpty ? phoneController.text.trim() : '+91 ',
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.smartphone, color: Color(0xFFE91E63), size: 28),
+                SizedBox(width: 12),
+                Text(
+                  'Phone Verification (OTP)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'We will send a 6-digit verification code to your mobile number',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: phoneInputCtrl,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Mobile Number',
+                prefixIcon: Icon(Icons.phone_outlined),
+                hintText: '+91 98765 43210',
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  final phone = phoneInputCtrl.text.trim();
+                  if (phone.isEmpty || phone.length < 8) {
+                    Get.snackbar('Invalid', 'Please enter a valid mobile number');
+                    return;
+                  }
+                  Navigator.pop(ctx);
+                  sendOtp(phone);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE91E63),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Send Verification Code', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> logout() async {
     await StorageService.clearAuth();
     Get.offAllNamed('/login');

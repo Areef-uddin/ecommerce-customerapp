@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/fcm_service.dart';
 import '../controllers/profile_controller.dart';
 
 class ProfileView extends StatelessWidget {
@@ -18,6 +19,7 @@ class ProfileView extends StatelessWidget {
       {'title': 'My Reviews', 'icon': Icons.star_border, 'route': null},
       {'title': 'Notifications', 'icon': Icons.notifications_none, 'route': '/notifications'},
       {'title': 'Settings', 'icon': Icons.settings_outlined, 'route': null},
+      {'title': 'FCM Push Token (Firebase)', 'icon': Icons.notifications_active_outlined, 'isFcm': true},
     ];
 
     return Scaffold(
@@ -76,6 +78,10 @@ class ProfileView extends StatelessWidget {
                 ),
                 trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
                 onTap: () {
+                  if (item['isFcm'] == true) {
+                    FcmService.showFcmTokenDialog(context);
+                    return;
+                  }
                   final route = item['route'] as String?;
                   if (route != null) {
                     Get.toNamed(route);

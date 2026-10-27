@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'core/routes/app_pages.dart';
+import 'core/services/fcm_service.dart';
 import 'core/storage/storage_service.dart';
 import 'core/theme/app_theme.dart';
 
@@ -16,8 +17,9 @@ void main() async {
     ),
   );
 
-  // Initialize Local Storage
+  // Initialize Local Storage & FCM
   await StorageService.init();
+  FcmService.init();
 
   runApp(const StyleHubApp());
 }

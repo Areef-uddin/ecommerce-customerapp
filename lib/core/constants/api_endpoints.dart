@@ -12,6 +12,7 @@ class ApiEndpoints {
   // Auth endpoints
   static const String register = '/auth/register/';
   static const String login = '/auth/login/';
+  static const String google = '/auth/google/';
   static const String sendOtp = '/auth/otp/send/';
   static const String verifyOtp = '/auth/otp/verify/';
   static const String refreshToken = '/auth/token/refresh/';

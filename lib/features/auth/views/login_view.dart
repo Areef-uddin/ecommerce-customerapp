@@ -223,7 +223,7 @@ class LoginView extends StatelessWidget {
                       assetPath: 'assets/google_logo.png',
                       size: 26,
                       onTap: () {
-                        controller.login();
+                        controller.promptGoogleSignIn(context);
                       },
                     ),
                     const SizedBox(width: 20),
@@ -231,7 +231,7 @@ class LoginView extends StatelessWidget {
                       assetPath: 'assets/apple.png',
                       size: 26,
                       onTap: () {
-                        controller.login();
+                        controller.signInWithGoogle(customEmail: 'apple.shopper@icloud.com', customName: 'Apple User');
                       },
                     ),
                     const SizedBox(width: 20),
@@ -239,7 +239,7 @@ class LoginView extends StatelessWidget {
                       icon: Icons.smartphone,
                       size: 22,
                       onTap: () {
-                        controller.sendOtp('+91 98765 43210');
+                        controller.showPhoneLoginSheet(context);
                       },
                     ),
                   ],

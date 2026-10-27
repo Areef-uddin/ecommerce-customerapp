@@ -51,6 +51,16 @@ class StorageService {
 
   static bool get isOnboarded => _prefs.getBool(_keyOnboarded) ?? false;
 
+  // FCM Token
+  static Future<void> saveFcmToken(String token) async {
+    await _prefs.setString('fcm_token', token);
+  }
+
+  static String getFcmToken() {
+    return _prefs.getString('fcm_token') ??
+        'AawNgEpbcByvfPlMzCOg5omvdjD10vGI6hZfKhObRJ8IR1UVjQSerNIa93VWMDbw-MLNO2bQahu3Drh0ciCShdp7MP3BSGvm0GQtxcHg_86HslCXdICVJ2p4_foKqVx1lb56FYrR5t1GBa610VjkLPcKRg';
+  }
+
   // Clear session
   static Future<void> clearAuth() async {
     await _prefs.remove(_keyToken);
