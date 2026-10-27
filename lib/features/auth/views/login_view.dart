@@ -223,7 +223,7 @@ class LoginView extends StatelessWidget {
                       assetPath: 'assets/google_logo.png',
                       size: 26,
                       onTap: () {
-                        controller.promptGoogleSignIn(context);
+                        controller.signInWithGoogle(context: context);
                       },
                     ),
                     const SizedBox(width: 20),

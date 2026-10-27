@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/storage_service.dart';
+import '../../../core/services/web_auth_helper.dart';
 
 class AuthController extends GetxController {
   // Empty inputs without dummy credentials
@@ -210,16 +211,49 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> signInWithGoogle({String? customEmail, String? customName}) async {
-    final email = customEmail ?? (emailController.text.trim().contains('@') ? emailController.text.trim() : 'areef.google@gmail.com');
-    final name = customName ?? (nameController.text.trim().isNotEmpty ? nameController.text.trim() : email.split('@')[0]);
-
+  Future<void> signInWithGoogle({String? customEmail, String? customName, BuildContext? context}) async {
     try {
       isLoading.value = true;
+      String email = customEmail?.trim() ?? '';
+      String name = customName?.trim() ?? '';
+      String avatar = 'https://lh3.googleusercontent.com/a/default-user';
+
+      if (email.isEmpty) {
+        // Trigger real Firebase Google Sign-In popup
+        try {
+          final googleUser = await triggerFirebaseGoogleSignIn();
+          if (googleUser != null && googleUser['email'] != null) {
+            email = googleUser['email'].toString().trim();
+            name = googleUser['name']?.toString().trim() ?? email.split('@')[0];
+            if (googleUser['avatar'] != null && googleUser['avatar'].toString().isNotEmpty) {
+              avatar = googleUser['avatar'].toString();
+            }
+          }
+        } catch (fbErr) {
+          debugPrint('Firebase Google Sign-In error: $fbErr');
+          Get.snackbar(
+            'Google Sign-In Alert',
+            fbErr.toString(),
+            backgroundColor: Colors.amber.shade800,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+          );
+          if (context != null) {
+            promptGoogleSignIn(context);
+          }
+          return;
+        }
+      }
+
+      if (email.isEmpty) {
+        // No email received (e.g. cancelled by user)
+        return;
+      }
+
       final res = await ApiClient.post(ApiEndpoints.google, data: {
         'email': email,
-        'name': name,
-        'avatar': 'https://lh3.googleusercontent.com/a/default-user',
+        'name': name.isNotEmpty ? name : email.split('@')[0],
+        'avatar': avatar,
       });
 
       final access = res.data['access'];
@@ -231,7 +265,7 @@ class AuthController extends GetxController {
 
       Get.snackbar(
         'Google Sign-In Successful',
-        'Welcome, ${user['full_name']}!',
+        'Welcome, ${user['full_name'] ?? user['email']}!',
         backgroundColor: Colors.green,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
@@ -254,10 +288,10 @@ class AuthController extends GetxController {
 
   void promptGoogleSignIn(BuildContext context) {
     final googleEmailCtrl = TextEditingController(
-      text: emailController.text.trim().isNotEmpty ? emailController.text.trim() : 'areef.google@gmail.com',
+      text: emailController.text.trim(),
     );
     final googleNameCtrl = TextEditingController(
-      text: nameController.text.trim().isNotEmpty ? nameController.text.trim() : 'Areef Uddin',
+      text: nameController.text.trim(),
     );
 
     showModalBottomSheet(
@@ -278,21 +312,23 @@ class AuthController extends GetxController {
                 Image.asset('assets/google_logo.png', width: 28, height: 28),
                 const SizedBox(width: 12),
                 const Text(
-                  'Sign in with Google',
+                  'Sign in with Google Account',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             const Text(
-              'Select or confirm your Google account to continue',
+              'Enter your Google account email to sign in directly',
               style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: 20),
             TextField(
               controller: googleEmailCtrl,
+              keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
-                labelText: 'Google Email Account',
+                labelText: 'Google Email Address',
+                hintText: 'yourname@gmail.com',
                 prefixIcon: Icon(Icons.email_outlined),
               ),
             ),
@@ -300,7 +336,8 @@ class AuthController extends GetxController {
             TextField(
               controller: googleNameCtrl,
               decoration: const InputDecoration(
-                labelText: 'Full Name',
+                labelText: 'Your Name (Optional)',
+                hintText: 'e.g. Alex',
                 prefixIcon: Icon(Icons.person_outline),
               ),
             ),
@@ -309,9 +346,14 @@ class AuthController extends GetxController {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
+                  final enteredEmail = googleEmailCtrl.text.trim();
+                  if (enteredEmail.isEmpty || !enteredEmail.contains('@')) {
+                    Get.snackbar('Invalid Email', 'Please enter a valid Google email address.');
+                    return;
+                  }
                   Navigator.pop(ctx);
                   signInWithGoogle(
-                    customEmail: googleEmailCtrl.text.trim(),
+                    customEmail: enteredEmail,
                     customName: googleNameCtrl.text.trim(),
                   );
                 },

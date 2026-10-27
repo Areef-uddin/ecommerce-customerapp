@@ -39,6 +39,27 @@ class WishlistController extends GetxController {
     }
   }
 
+  Future<void> moveToCart(ProductModel item) async {
+    try {
+      await ApiClient.post(ApiEndpoints.cart, data: {
+        'product_id': item.id,
+        'quantity': 1,
+        'size': item.sizes.isNotEmpty ? item.sizes.first : 'M',
+        'color': item.colors.isNotEmpty ? item.colors.first.name : 'Standard',
+      });
+      await removeFromWishlist(item);
+      Get.snackbar(
+        'Moved to Bag',
+        '${item.name} added to your shopping bag!',
+        backgroundColor: const Color(0xFF10B981),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+    } catch (e) {
+      Get.snackbar('Error', 'Unable to move item to bag.');
+    }
+  }
+
   Future<void> moveAllToCart() async {
     for (var item in wishlistItems) {
       try {

@@ -41,6 +41,46 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <!-- Firebase App & Auth SDKs for Web -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAT46Y1gGr2IFdbTsoIJ3KolpsA5pHe9S4",
+      authDomain: "ecommerce-auth-fcm.firebaseapp.com",
+      projectId: "ecommerce-auth-fcm",
+      storageBucket: "ecommerce-auth-fcm.firebasestorage.app",
+      messagingSenderId: "621377508053",
+      appId: "1:621377508053:android:f8125ef320004cde55085c"
+    };
+    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    // Google Sign-In Popup for Firebase Web
+    window.signInWithGoogleFirebase = function() {
+      return new Promise((resolve, reject) => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        firebase.auth().signInWithPopup(provider)
+          .then((res) => {
+            const u = res.user;
+            resolve(JSON.stringify({
+              email: u.email,
+              name: u.displayName || u.email.split('@')[0],
+              avatar: u.photoURL || '',
+              uid: u.uid
+            }));
+          })
+          .catch((err) => {
+            console.error('Firebase Google Auth error:', err);
+            reject(err.message || 'Firebase Google Sign-In canceled or failed');
+          });
+      });
+    };
+  </script>
+
   <!-- Razorpay Checkout JS -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="flutter_bootstrap.js" async></script>
