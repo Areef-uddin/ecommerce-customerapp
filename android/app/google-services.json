@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "621377508053",
+    "project_id": "ecommerce-auth-fcm",
+    "storage_bucket": "ecommerce-auth-fcm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:621377508053:android:f8125ef320004cde55085c",
+        "android_client_info": {
+          "package_name": "com.company.appname"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "621377508053-1ej88epn67vc08igp0fib1fnletvrjjp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAT46Y1gGr2IFdbTsoIJ3KolpsA5pHe9S4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "621377508053-1ej88epn67vc08igp0fib1fnletvrjjp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
