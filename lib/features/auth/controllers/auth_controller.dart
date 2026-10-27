@@ -65,7 +65,6 @@ class AuthController extends GetxController {
             return '$firstKey: $val';
           }
         }
-        // Check standard DRF field errors e.g. {"phone": ["..."], "email": ["..."]}
         if (data.isNotEmpty) {
           final firstKey = data.keys.first;
           final val = data[firstKey];
@@ -73,6 +72,10 @@ class AuthController extends GetxController {
           return '$firstKey: $val';
         }
       }
+    }
+    if (error != null) {
+      final s = error.toString().replaceFirst('Exception: ', '').trim();
+      if (s.isNotEmpty) return s;
     }
     return fallback;
   }

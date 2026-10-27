@@ -44,6 +44,7 @@
   <!-- Firebase App & Auth SDKs for Web -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <div id="recaptcha-container"></div>
   <script>
     const firebaseConfig = {
@@ -62,15 +63,54 @@
     }
     ensureFirebase();
 
-    // 1. Google Sign-In Popup for Firebase Web
+    // 1. Google Sign-In with Firebase and Google Identity Services dual-fallback
     window.signInWithGoogleFirebase = function() {
       return new Promise((resolve, reject) => {
         try {
           ensureFirebase();
+
+          function tryGoogleIdentityFallback(origError) {
+            try {
+              if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                const client = google.accounts.oauth2.initTokenClient({
+                  client_id: '621377508053-1ej88epn67vc08igp0fib1fnletvrjjp.apps.googleusercontent.com',
+                  scope: 'email profile openid',
+                  callback: (tokenResponse) => {
+                    if (tokenResponse && tokenResponse.access_token) {
+                      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
+                      })
+                      .then(r => r.json())
+                      .then(u => {
+                        resolve(JSON.stringify({
+                          email: u.email || '',
+                          name: u.name || (u.email ? u.email.split('@')[0] : 'Shopper'),
+                          avatar: u.picture || 'https://lh3.googleusercontent.com/a/default-user',
+                          uid: u.sub || ''
+                        }));
+                      })
+                      .catch(e => reject(e.toString()));
+                    } else {
+                      reject(origError ? (origError.message || origError) : 'Google Sign-In canceled');
+                    }
+                  },
+                  error_callback: (err) => {
+                    reject(err.message || (origError ? origError.message : 'Google Sign-In failed'));
+                  }
+                });
+                client.requestAccessToken({ prompt: 'select_account' });
+                return true;
+              }
+            } catch (_) {}
+            return false;
+          }
+
           if (typeof firebase === 'undefined' || !firebase.auth) {
-            reject('Firebase Auth SDK is not available yet');
+            if (tryGoogleIdentityFallback(null)) return;
+            reject('Firebase Auth SDK is still loading. Please reload the page.');
             return;
           }
+
           const provider = new firebase.auth.GoogleAuthProvider();
           provider.addScope('email');
           provider.addScope('profile');
@@ -85,8 +125,19 @@
               }));
             })
             .catch((err) => {
-              console.error('Firebase Google Auth error:', err);
-              reject(err.message || 'Firebase Google Sign-In canceled or failed');
+              console.warn('Firebase Google Auth error, trying Google Identity Services fallback:', err);
+              if (tryGoogleIdentityFallback(err)) {
+                return;
+              }
+              let userMsg = err.message || 'Firebase Google Sign-In failed';
+              if (err.code === 'auth/operation-not-allowed') {
+                userMsg = 'Please enable Google provider in Firebase Console > Authentication > Sign-in method.';
+              } else if (err.code === 'auth/popup-blocked') {
+                userMsg = 'Browser popup blocked. Please allow popups for this site.';
+              } else if (err.code === 'auth/unauthorized-domain') {
+                userMsg = 'Domain localhost is not added in Firebase Console > Authentication > Settings > Authorized domains.';
+              }
+              reject(userMsg);
             });
         } catch (e) {
           reject(e.toString());
