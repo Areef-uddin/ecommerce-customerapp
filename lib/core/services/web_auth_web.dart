@@ -60,3 +60,23 @@ Future<Map<String, dynamic>?> verifyFirebasePhoneOtp(String code) async {
   }
   return null;
 }
+
+Future<Map<String, dynamic>?> triggerRazorpayCheckout(Map<String, dynamic> options) async {
+  try {
+    if (!js_util.hasProperty(html.window, 'openRazorpayCheckout')) {
+      throw 'Razorpay Checkout is not ready on this page.';
+    }
+    final optionsJson = jsonEncode(options);
+    final dynamic promise = js_util.callMethod(html.window, 'openRazorpayCheckout', [optionsJson]);
+    if (promise == null) throw 'Failed to open Razorpay gateway.';
+    final dynamic res = await js_util.promiseToFuture(promise);
+    if (res != null) {
+      if (res is String) return jsonDecode(res) as Map<String, dynamic>;
+      return Map<String, dynamic>.from(res as Map);
+    }
+  } catch (e) {
+    debugPrint('Razorpay Checkout error: $e');
+    rethrow;
+  }
+  return null;
+}

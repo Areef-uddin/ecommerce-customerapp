@@ -45,6 +45,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Official Razorpay Standard Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <div id="recaptcha-container"></div>
   <script>
     const firebaseConfig = {
@@ -205,10 +207,42 @@
         }
       });
     };
+
+    // 4. Real Razorpay Standard Checkout Gateway Modal
+    window.openRazorpayCheckout = function(optionsJson) {
+      return new Promise((resolve, reject) => {
+        try {
+          if (typeof Razorpay === 'undefined') {
+            reject('Razorpay SDK script not loaded. Please check your internet connection.');
+            return;
+          }
+          const opts = JSON.parse(optionsJson);
+          opts.handler = function(response) {
+            resolve(JSON.stringify({
+              success: true,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature
+            }));
+          };
+          opts.modal = {
+            ondismiss: function() {
+              reject('Payment window closed by user');
+            }
+          };
+          const rzp = new Razorpay(opts);
+          rzp.on('payment.failed', function(resp) {
+            console.error('Razorpay payment failed:', resp);
+            reject((resp.error && resp.error.description) ? resp.error.description : 'Payment failed');
+          });
+          rzp.open();
+        } catch (e) {
+          reject(e.toString());
+        }
+      });
+    };
   </script>
 
-  <!-- Razorpay Checkout JS -->
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -22,6 +22,7 @@ class AuthController extends GetxController {
   final isPasswordVisible = false.obs;
   final otpIdentifier = ''.obs;
   final timerSeconds = 25.obs;
+  final serverOtp = ''.obs;
   Timer? _timer;
 
   @override
@@ -166,14 +167,16 @@ class AuthController extends GetxController {
       return;
     }
 
-    String formattedPhone = rawPhone;
-    if (!formattedPhone.startsWith('+')) {
-      if (formattedPhone.length == 10) {
-        formattedPhone = '+91$formattedPhone';
-      } else {
-        formattedPhone = '+$formattedPhone';
-      }
+    // Clean and normalize phone number
+    String cleaned = rawPhone.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    if (cleaned.startsWith('+91')) {
+      cleaned = cleaned.substring(3);
+    } else if (cleaned.startsWith('91') && cleaned.length == 12) {
+      cleaned = cleaned.substring(2);
+    } else if (cleaned.startsWith('0')) {
+      cleaned = cleaned.substring(1);
     }
+    final String formattedPhone = '+91$cleaned';
 
     try {
       isLoading.value = true;
@@ -193,27 +196,53 @@ class AuthController extends GetxController {
       }
 
       // 2. Synchronize with NeonDB PostgreSQL backend session
-      await ApiClient.post(ApiEndpoints.sendOtp, data: {
+      final res = await ApiClient.post(ApiEndpoints.sendOtp, data: {
         'identifier': formattedPhone,
       });
+
+      final receivedOtp = res.data['otp']?.toString() ?? '';
+      serverOtp.value = receivedOtp;
 
       startOtpTimer();
       Get.toNamed('/otp');
 
-      Get.snackbar(
-        'Code Sent',
-        'Verification OTP sent to $formattedPhone via SMS.',
-        backgroundColor: const Color(0xFF10B981),
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 4),
-      );
+      if (receivedOtp.isNotEmpty) {
+        Get.snackbar(
+          'Verification Code',
+          'Your OTP for $formattedPhone is: $receivedOtp',
+          backgroundColor: const Color(0xFF0F172A),
+          colorText: const Color(0xFF38BDF8),
+          icon: const Icon(Icons.sms_outlined, color: Color(0xFF38BDF8)),
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 10),
+          margin: const EdgeInsets.all(12),
+          borderRadius: 12,
+        );
+      } else {
+        Get.snackbar(
+          'Code Sent',
+          'Verification OTP sent to $formattedPhone via SMS.',
+          backgroundColor: const Color(0xFF10B981),
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 4),
+        );
+      }
     } catch (e) {
       final msg = _extractErrorMessage(e, 'Failed to send verification code');
       Get.snackbar('Error', msg,
           backgroundColor: Colors.redAccent, colorText: Colors.white, snackPosition: SnackPosition.TOP);
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  void fillServerOtp() {
+    final code = serverOtp.value.trim();
+    if (code.length == 6) {
+      for (int i = 0; i < 6; i++) {
+        otpDigitControllers[i].text = code[i];
+      }
     }
   }
 

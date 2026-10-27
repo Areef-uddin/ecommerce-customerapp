@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/web_auth_helper.dart';
+import '../../../core/storage/storage_service.dart';
+import '../../cart/controllers/cart_controller.dart';
 import '../../orders/models/order_model.dart';
 import '../../profile/models/address_model.dart';
 
@@ -10,8 +13,8 @@ class CheckoutController extends GetxController {
   final addresses = <AddressModel>[].obs;
   final selectedAddressId = 0.obs;
 
-  // Payment method
-  final selectedPaymentMethod = 'UPI'.obs;
+  // Selected Payment Method: 'PhonePe', 'Paytm', 'Razorpay', or 'Cash on Delivery'
+  final selectedPaymentMethod = 'PhonePe'.obs;
   final isPlacingOrder = false.obs;
   final placedOrder = Rxn<OrderModel>();
 
@@ -83,183 +86,114 @@ class CheckoutController extends GetxController {
   }
 
   Future<void> placeOrder() async {
-    if (selectedPaymentMethod.value == 'Razorpay') {
-      await startRazorpayPayment();
+    if (selectedPaymentMethod.value == 'Cash on Delivery') {
+      await placeCodOrder();
       return;
     }
 
+    // PhonePe, Paytm, or Razorpay opens the real Razorpay standard gateway modal
+    await startRazorpayPayment(preferredMethod: selectedPaymentMethod.value);
+  }
+
+  Future<void> placeCodOrder() async {
     try {
       isPlacingOrder.value = true;
       final res = await ApiClient.post(ApiEndpoints.orders, data: {
         'address_id': selectedAddressId.value,
-        'payment_method': selectedPaymentMethod.value,
+        'payment_method': 'Cash on Delivery',
       });
 
       placedOrder.value = OrderModel.fromJson(res.data);
+      if (Get.isRegistered<CartController>()) {
+        Get.find<CartController>().fetchCart();
+      }
       Get.offNamed('/order-placed');
     } catch (e) {
-      Get.snackbar('Order Failed', 'Could not complete order, please try again.');
+      Get.snackbar('Order Failed', 'Could not complete COD order, please try again.');
     } finally {
       isPlacingOrder.value = false;
     }
   }
 
-  Future<void> startRazorpayPayment() async {
+  Future<void> startRazorpayPayment({String? preferredMethod}) async {
+    final method = preferredMethod ?? selectedPaymentMethod.value;
     try {
       isPlacingOrder.value = true;
-      
+
       // 1. Create Razorpay order on backend
       final orderRes = await ApiClient.post(ApiEndpoints.razorpayCreateOrder, data: {
         'address_id': selectedAddressId.value,
+        'payment_method': method,
       });
 
-      final razorpayOrderId = orderRes.data['razorpay_order_id'] ?? 'order_sim_123';
-      final keyId = orderRes.data['key_id'] ?? 'rzp_test_Tt3TjWZ9FqBAW6';
+      final razorpayOrderId = orderRes.data['razorpay_order_id']?.toString() ?? '';
+      final keyId = orderRes.data['key_id']?.toString() ?? 'rzp_test_Tt3TjWZ9FqBAW6';
       final totalAmount = orderRes.data['total_amount'] ?? '2998';
+      final amountInPaise = orderRes.data['amount'] ?? ((double.tryParse(totalAmount.toString()) ?? 2998) * 100).toInt();
 
-      // 2. Open sleek Razorpay checkout modal
-      _showRazorpayPaymentModal(
-        orderId: razorpayOrderId,
-        keyId: keyId,
-        amount: totalAmount,
-      );
+      final selectedAddr = addresses.firstWhereOrNull((a) => a.id == selectedAddressId.value);
+      final user = StorageService.getUser();
+      final customerName = selectedAddr?.fullName.isNotEmpty == true
+          ? selectedAddr!.fullName
+          : (user?['full_name'] ?? 'Shopper');
+      final customerEmail = user?['email'] ?? 'customer@example.com';
+      final customerPhone = selectedAddr?.phone.isNotEmpty == true
+          ? selectedAddr!.phone
+          : (user?['phone'] ?? '+919876543210');
+
+      String paymentDesc = 'Online Payment';
+      String themeColor = '#0C2340';
+      if (method == 'PhonePe') {
+        paymentDesc = 'PhonePe UPI Payment';
+        themeColor = '#5F259F';
+      } else if (method == 'Paytm') {
+        paymentDesc = 'Paytm UPI/Wallet Payment';
+        themeColor = '#002970';
+      }
+
+      // 2. Trigger real Razorpay Standard Checkout Gateway Modal
+      final options = <String, dynamic>{
+        'key': keyId,
+        'amount': amountInPaise,
+        'currency': 'INR',
+        'name': 'StyleHub Luxe Fashion',
+        'description': paymentDesc,
+        'order_id': razorpayOrderId,
+        'prefill': {
+          'name': customerName,
+          'email': customerEmail,
+          'contact': customerPhone,
+        },
+        'theme': {
+          'color': themeColor,
+        },
+      };
+
+      final paymentResult = await triggerRazorpayCheckout(options);
+
+      if (paymentResult != null && paymentResult['success'] == true) {
+        await completeRazorpayPayment(
+          razorpayOrderId: paymentResult['razorpay_order_id']?.toString() ?? razorpayOrderId,
+          razorpayPaymentId: paymentResult['razorpay_payment_id']?.toString() ?? '',
+          razorpaySignature: paymentResult['razorpay_signature']?.toString() ?? '',
+          paymentMethod: method,
+        );
+      } else {
+        Get.snackbar('Payment Cancelled', 'Payment window was closed or cancelled.');
+      }
     } catch (e) {
-      Get.snackbar('Payment Error', 'Unable to initiate Razorpay payment. Please try again.');
+      debugPrint('Razorpay checkout notice: $e');
+      Get.snackbar('Payment Notice', e.toString().replaceAll('Exception: ', ''));
     } finally {
       isPlacingOrder.value = false;
     }
-  }
-
-  void _showRazorpayPaymentModal({
-    required String orderId,
-    required String keyId,
-    required String amount,
-  }) {
-    Get.dialog(
-      Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Razorpay Header with official branding style
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0C2340),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.bolt, color: Color(0xFF00BAF2), size: 18),
-                        SizedBox(width: 4),
-                        Text(
-                          'Razorpay',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE0F2FE),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'TEST MODE',
-                      style: TextStyle(
-                        color: Color(0xFF0284C7),
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'StyleHub Luxe Fashion',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Order ID: $orderId',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Amount Payable', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                    Text('₹$amount', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: Color(0xFF0C2340))),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Get.back(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        Get.back();
-                        await completeRazorpayPayment(
-                          razorpayOrderId: orderId,
-                          razorpayPaymentId: 'pay_${DateTime.now().millisecondsSinceEpoch}',
-                          razorpaySignature: 'sig_${DateTime.now().millisecondsSinceEpoch}',
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00BAF2),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Pay Now', style: TextStyle(fontWeight: FontWeight.w800)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> completeRazorpayPayment({
     required String razorpayOrderId,
     required String razorpayPaymentId,
     required String razorpaySignature,
+    required String paymentMethod,
   }) async {
     try {
       isPlacingOrder.value = true;
@@ -268,9 +202,13 @@ class CheckoutController extends GetxController {
         'razorpay_order_id': razorpayOrderId,
         'razorpay_payment_id': razorpayPaymentId,
         'razorpay_signature': razorpaySignature,
+        'payment_method': paymentMethod,
       });
 
       placedOrder.value = OrderModel.fromJson(res.data);
+      if (Get.isRegistered<CartController>()) {
+        Get.find<CartController>().fetchCart();
+      }
       Get.offNamed('/order-placed');
     } catch (e) {
       Get.snackbar('Payment Failed', 'Razorpay transaction verification failed.');

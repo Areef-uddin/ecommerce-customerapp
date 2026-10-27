@@ -11,3 +11,7 @@ Future<bool> sendFirebasePhoneOtp(String phoneNumber) async {
 Future<Map<String, dynamic>?> verifyFirebasePhoneOtp(String code) async {
   return null;
 }
+
+Future<Map<String, dynamic>?> triggerRazorpayCheckout(Map<String, dynamic> options) async {
+  return null;
+}

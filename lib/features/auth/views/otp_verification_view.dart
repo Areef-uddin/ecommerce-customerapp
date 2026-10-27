@@ -124,7 +124,52 @@ class OtpVerificationView extends StatelessWidget {
                     ],
                   ],
                 ),
-                const SizedBox(height: 32),
+
+                // Instant verification code helper if telecom SMS is delayed
+                if (controller.serverOtp.value.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.mark_email_read_outlined, color: Color(0xFF16A34A), size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Verification Code Ready',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF15803D)),
+                              ),
+                              Text(
+                                'Code: ${controller.serverOtp.value}',
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF166534), letterSpacing: 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => controller.fillServerOtp(),
+                          style: TextButton.styleFrom(
+                            backgroundColor: const Color(0xFF16A34A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            minimumSize: Size.zero,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: const Text('Auto-fill', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
 
                 // Verify Button
                 SizedBox(
