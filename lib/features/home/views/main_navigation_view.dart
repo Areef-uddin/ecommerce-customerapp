@@ -5,7 +5,9 @@ import '../controllers/home_controller.dart';
 import 'home_view.dart';
 import '../../category/views/category_view.dart';
 import '../../wishlist/views/wishlist_view.dart';
+import '../../wishlist/controllers/wishlist_controller.dart';
 import '../../cart/views/cart_view.dart';
+import '../../cart/controllers/cart_controller.dart';
 import '../../profile/views/profile_view.dart';
 
 class MainNavigationView extends StatelessWidget {
@@ -33,7 +35,18 @@ class MainNavigationView extends StatelessWidget {
           ),
           child: BottomNavigationBar(
             currentIndex: controller.currentNavIndex.value,
-            onTap: (index) => controller.currentNavIndex.value = index,
+            onTap: (index) {
+              controller.currentNavIndex.value = index;
+              if (index == 2) {
+                if (Get.isRegistered<WishlistController>()) {
+                  Get.find<WishlistController>().fetchWishlist();
+                }
+              } else if (index == 3) {
+                if (Get.isRegistered<CartController>()) {
+                  Get.find<CartController>().fetchCart();
+                }
+              }
+            },
             backgroundColor: Colors.white,
             selectedItemColor: AppColors.primary,
             unselectedItemColor: AppColors.textMuted,

@@ -1,7 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/api_client.dart';
 import '../models/product_model.dart';
+import '../../cart/controllers/cart_controller.dart';
+import '../../wishlist/controllers/wishlist_controller.dart';
 
 class ProductController extends GetxController {
   final isLoading = true.obs;
@@ -18,6 +21,7 @@ class ProductController extends GetxController {
   final selectedSize = 'M'.obs;
   final currentImageIndex = 0.obs;
   final isAddingToCart = false.obs;
+  final isWishlisting = false.obs;
 
   // Size Guide State
   final sizeGuideCategory = 'Women'.obs;
@@ -95,15 +99,59 @@ class ProductController extends GetxController {
         'color': colorName,
       });
 
+      // Synchronize CartController immediately
+      if (Get.isRegistered<CartController>()) {
+        Get.find<CartController>().fetchCart();
+      }
+
       Get.snackbar(
-        'Added to Cart',
+        'Added to Bag',
         '${product.name} added to your shopping bag',
+        backgroundColor: const Color(0xFF10B981),
+        colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to add item to cart');
+      Get.snackbar('Error', 'Failed to add item to bag');
     } finally {
       isAddingToCart.value = false;
+    }
+  }
+
+  Future<void> toggleWishlist() async {
+    final product = currentProduct.value;
+    if (product == null) return;
+
+    product.isWishlisted = !product.isWishlisted;
+    currentProduct.refresh();
+
+    try {
+      final res = await ApiClient.post(ApiEndpoints.wishlistToggle, data: {
+        'product_id': product.id,
+      });
+
+      if (res.data != null && res.data['is_wishlisted'] != null) {
+        product.isWishlisted = res.data['is_wishlisted'] == true;
+        currentProduct.refresh();
+      }
+
+      // Synchronize WishlistController immediately
+      if (Get.isRegistered<WishlistController>()) {
+        Get.find<WishlistController>().fetchWishlist();
+      }
+
+      Get.snackbar(
+        product.isWishlisted ? 'Saved to Wishlist' : 'Removed from Wishlist',
+        product.name,
+        backgroundColor: product.isWishlisted ? const Color(0xFFE91E63) : Colors.black87,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      product.isWishlisted = !product.isWishlisted;
+      currentProduct.refresh();
+      Get.snackbar('Error', 'Failed to update wishlist');
     }
   }
 

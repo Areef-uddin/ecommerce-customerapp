@@ -4,12 +4,27 @@ import '../../../core/constants/app_colors.dart';
 import '../controllers/wishlist_controller.dart';
 import '../../product/models/product_model.dart';
 
-class WishlistView extends StatelessWidget {
+class WishlistView extends StatefulWidget {
   const WishlistView({super.key});
 
   @override
+  State<WishlistView> createState() => _WishlistViewState();
+}
+
+class _WishlistViewState extends State<WishlistView> {
+  late final WishlistController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.put(WishlistController());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchWishlist();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.put(WishlistController());
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),

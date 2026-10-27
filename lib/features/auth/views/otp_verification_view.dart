@@ -96,22 +96,32 @@ class OtpVerificationView extends StatelessWidget {
                 ),
                 const SizedBox(height: 28),
 
-                // Resend Timer
+                // Resend Timer & Action
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'Resend code in ',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                    ),
-                    Text(
-                      '00:${controller.timerSeconds.value.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                    if (controller.timerSeconds.value > 0) ...[
+                      Text(
+                        'Resend code in ',
+                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                       ),
-                    ),
+                      Text(
+                        '00:${controller.timerSeconds.value.toString().padLeft(2, '0')}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ] else ...[
+                      TextButton(
+                        onPressed: () => controller.sendPhoneOtp(controller.otpIdentifier.value),
+                        child: const Text(
+                          'Resend Verification Code',
+                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 32),

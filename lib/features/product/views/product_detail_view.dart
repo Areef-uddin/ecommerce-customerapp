@@ -41,11 +41,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
               );
             }),
             onPressed: () {
-              final p = controller.currentProduct.value;
-              if (p != null) {
-                p.isWishlisted = !p.isWishlisted;
-                controller.currentProduct.refresh();
-              }
+              controller.toggleWishlist();
             },
           ),
         ],

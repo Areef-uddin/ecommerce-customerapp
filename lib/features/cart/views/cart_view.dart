@@ -4,12 +4,27 @@ import '../../../core/constants/app_colors.dart';
 import '../controllers/cart_controller.dart';
 import '../models/cart_model.dart';
 
-class CartView extends StatelessWidget {
+class CartView extends StatefulWidget {
   const CartView({super.key});
 
   @override
+  State<CartView> createState() => _CartViewState();
+}
+
+class _CartViewState extends State<CartView> {
+  late final CartController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.put(CartController());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchCart();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.put(CartController());
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),

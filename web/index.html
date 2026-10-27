@@ -44,6 +44,7 @@
   <!-- Firebase App & Auth SDKs for Web -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <div id="recaptcha-container"></div>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAT46Y1gGr2IFdbTsoIJ3KolpsA5pHe9S4",
@@ -53,30 +54,104 @@
       messagingSenderId: "621377508053",
       appId: "1:621377508053:android:f8125ef320004cde55085c"
     };
-    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
 
-    // Google Sign-In Popup for Firebase Web
+    function ensureFirebase() {
+      if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+    }
+    ensureFirebase();
+
+    // 1. Google Sign-In Popup for Firebase Web
     window.signInWithGoogleFirebase = function() {
       return new Promise((resolve, reject) => {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
-        firebase.auth().signInWithPopup(provider)
-          .then((res) => {
-            const u = res.user;
-            resolve(JSON.stringify({
-              email: u.email,
-              name: u.displayName || u.email.split('@')[0],
-              avatar: u.photoURL || '',
-              uid: u.uid
-            }));
-          })
-          .catch((err) => {
-            console.error('Firebase Google Auth error:', err);
-            reject(err.message || 'Firebase Google Sign-In canceled or failed');
-          });
+        try {
+          ensureFirebase();
+          if (typeof firebase === 'undefined' || !firebase.auth) {
+            reject('Firebase Auth SDK is not available yet');
+            return;
+          }
+          const provider = new firebase.auth.GoogleAuthProvider();
+          provider.addScope('email');
+          provider.addScope('profile');
+          firebase.auth().signInWithPopup(provider)
+            .then((res) => {
+              const u = res.user;
+              resolve(JSON.stringify({
+                email: u.email || '',
+                name: u.displayName || (u.email ? u.email.split('@')[0] : 'Shopper'),
+                avatar: u.photoURL || 'https://lh3.googleusercontent.com/a/default-user',
+                uid: u.uid
+              }));
+            })
+            .catch((err) => {
+              console.error('Firebase Google Auth error:', err);
+              reject(err.message || 'Firebase Google Sign-In canceled or failed');
+            });
+        } catch (e) {
+          reject(e.toString());
+        }
+      });
+    };
+
+    // 2. Real Firebase Phone Auth SMS OTP
+    window.sendFirebasePhoneOtp = function(phoneNumber) {
+      return new Promise((resolve, reject) => {
+        try {
+          ensureFirebase();
+          if (typeof firebase === 'undefined' || !firebase.auth) {
+            reject('Firebase Auth SDK is not ready');
+            return;
+          }
+          if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+              'size': 'invisible'
+            });
+          }
+          firebase.auth().signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier)
+            .then((confirmationResult) => {
+              window.phoneConfirmationResult = confirmationResult;
+              resolve(JSON.stringify({ success: true, message: 'OTP sent to ' + phoneNumber }));
+            })
+            .catch((err) => {
+              console.error('Firebase Phone Auth send error:', err);
+              if (window.recaptchaVerifier) {
+                try {
+                  window.recaptchaVerifier.render().then(widgetId => grecaptcha.reset(widgetId)).catch(()=>{});
+                } catch(_) {}
+              }
+              reject(err.message || 'Failed to send SMS OTP via Firebase');
+            });
+        } catch (e) {
+          reject(e.toString());
+        }
+      });
+    };
+
+    // 3. Real Firebase Phone Auth OTP Verification
+    window.verifyFirebasePhoneOtp = function(code) {
+      return new Promise((resolve, reject) => {
+        try {
+          if (!window.phoneConfirmationResult) {
+            reject('No active Firebase phone verification session found.');
+            return;
+          }
+          window.phoneConfirmationResult.confirm(code)
+            .then((res) => {
+              const u = res.user;
+              resolve(JSON.stringify({
+                success: true,
+                phone: u.phoneNumber || '',
+                uid: u.uid
+              }));
+            })
+            .catch((err) => {
+              console.error('Firebase Phone Auth verify error:', err);
+              reject(err.message || 'Invalid or expired OTP code');
+            });
+        } catch (e) {
+          reject(e.toString());
+        }
       });
     };
   </script>

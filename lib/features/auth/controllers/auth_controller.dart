@@ -153,25 +153,60 @@ class AuthController extends GetxController {
   }
 
   Future<void> sendOtp(String identifier) async {
+    await sendPhoneOtp(identifier);
+  }
+
+  Future<void> sendPhoneOtp(String phone) async {
+    final rawPhone = phone.trim();
+    if (rawPhone.isEmpty) {
+      Get.snackbar('Required', 'Please enter your mobile phone number.');
+      return;
+    }
+
+    String formattedPhone = rawPhone;
+    if (!formattedPhone.startsWith('+')) {
+      if (formattedPhone.length == 10) {
+        formattedPhone = '+91$formattedPhone';
+      } else {
+        formattedPhone = '+$formattedPhone';
+      }
+    }
+
     try {
       isLoading.value = true;
-      otpIdentifier.value = identifier;
-      final res = await ApiClient.post(ApiEndpoints.sendOtp, data: {
-        'identifier': identifier,
-      });
+      otpIdentifier.value = formattedPhone;
 
-      final code = res.data['code'];
-      if (code != null && code.toString().length == 6) {
-        String cStr = code.toString();
-        for (int i = 0; i < 6; i++) {
-          otpDigitControllers[i].text = cStr[i];
-        }
+      // Clear any previous OTP inputs so user enters their real SMS code
+      for (var c in otpDigitControllers) {
+        c.clear();
       }
+
+      // 1. Send Real SMS OTP via Firebase Phone Auth
+      bool fbSent = false;
+      try {
+        fbSent = await sendFirebasePhoneOtp(formattedPhone);
+      } catch (fbErr) {
+        debugPrint('Firebase phone auth notice: $fbErr');
+      }
+
+      // 2. Synchronize with NeonDB PostgreSQL backend session
+      await ApiClient.post(ApiEndpoints.sendOtp, data: {
+        'identifier': formattedPhone,
+      });
 
       startOtpTimer();
       Get.toNamed('/otp');
+
+      Get.snackbar(
+        'Code Sent',
+        'Verification OTP sent to $formattedPhone via SMS.',
+        backgroundColor: const Color(0xFF10B981),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 4),
+      );
     } catch (e) {
-      final msg = _extractErrorMessage(e, 'Failed to send OTP code');
+      final msg = _extractErrorMessage(e, 'Failed to send verification code');
       Get.snackbar('Error', msg,
           backgroundColor: Colors.redAccent, colorText: Colors.white, snackPosition: SnackPosition.TOP);
     } finally {
@@ -180,15 +215,24 @@ class AuthController extends GetxController {
   }
 
   Future<void> verifyOtp() async {
-    final code = otpDigitControllers.map((c) => c.text).join();
+    final code = otpDigitControllers.map((c) => c.text.trim()).join();
     if (code.length < 6) {
-      Get.snackbar('Incomplete', 'Please enter all 6 digits',
+      Get.snackbar('Incomplete', 'Please enter all 6 digits of your verification code',
           backgroundColor: Colors.redAccent, colorText: Colors.white, snackPosition: SnackPosition.TOP);
       return;
     }
 
     try {
       isLoading.value = true;
+
+      // 1. Verify with Firebase if active session exists
+      try {
+        await verifyFirebasePhoneOtp(code);
+      } catch (fbErr) {
+        debugPrint('Firebase verify note: $fbErr');
+      }
+
+      // 2. Verify with backend & obtain JWT tokens
       final res = await ApiClient.post(ApiEndpoints.verifyOtp, data: {
         'identifier': otpIdentifier.value,
         'code': code,
@@ -201,9 +245,17 @@ class AuthController extends GetxController {
       await StorageService.saveTokens(access: access, refresh: refresh);
       await StorageService.saveUser(user);
 
+      Get.snackbar(
+        'Verified Successfully',
+        'Welcome, ${user['full_name'] ?? 'Shopper'}!',
+        backgroundColor: const Color(0xFF10B981),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+
       Get.offAllNamed('/home');
     } catch (e) {
-      final msg = _extractErrorMessage(e, 'Invalid or expired OTP code');
+      final msg = _extractErrorMessage(e, 'Invalid or expired verification code');
       Get.snackbar('Verification Failed', msg,
           backgroundColor: Colors.redAccent, colorText: Colors.white, snackPosition: SnackPosition.TOP);
     } finally {
@@ -211,44 +263,19 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> signInWithGoogle({String? customEmail, String? customName, BuildContext? context}) async {
+  Future<void> signInWithGoogle() async {
     try {
       isLoading.value = true;
-      String email = customEmail?.trim() ?? '';
-      String name = customName?.trim() ?? '';
-      String avatar = 'https://lh3.googleusercontent.com/a/default-user';
 
-      if (email.isEmpty) {
-        // Trigger real Firebase Google Sign-In popup
-        try {
-          final googleUser = await triggerFirebaseGoogleSignIn();
-          if (googleUser != null && googleUser['email'] != null) {
-            email = googleUser['email'].toString().trim();
-            name = googleUser['name']?.toString().trim() ?? email.split('@')[0];
-            if (googleUser['avatar'] != null && googleUser['avatar'].toString().isNotEmpty) {
-              avatar = googleUser['avatar'].toString();
-            }
-          }
-        } catch (fbErr) {
-          debugPrint('Firebase Google Sign-In error: $fbErr');
-          Get.snackbar(
-            'Google Sign-In Alert',
-            fbErr.toString(),
-            backgroundColor: Colors.amber.shade800,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 4),
-          );
-          if (context != null) {
-            promptGoogleSignIn(context);
-          }
-          return;
-        }
-      }
-
-      if (email.isEmpty) {
-        // No email received (e.g. cancelled by user)
+      // Real Firebase Google Sign-In popup
+      final googleUser = await triggerFirebaseGoogleSignIn();
+      if (googleUser == null || googleUser['email'] == null) {
         return;
       }
+
+      final email = googleUser['email'].toString().trim();
+      final name = googleUser['name']?.toString().trim() ?? email.split('@')[0];
+      final avatar = googleUser['avatar']?.toString() ?? 'https://lh3.googleusercontent.com/a/default-user';
 
       final res = await ApiClient.post(ApiEndpoints.google, data: {
         'email': email,
@@ -264,9 +291,9 @@ class AuthController extends GetxController {
       await StorageService.saveUser(user);
 
       Get.snackbar(
-        'Google Sign-In Successful',
+        'Google Authentication Successful',
         'Welcome, ${user['full_name'] ?? user['email']}!',
-        backgroundColor: Colors.green,
+        backgroundColor: const Color(0xFF10B981),
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -275,170 +302,16 @@ class AuthController extends GetxController {
     } catch (e) {
       final msg = _extractErrorMessage(e, 'Google Sign-In failed');
       Get.snackbar(
-        'Authentication Error',
+        'Google Sign-In',
         msg,
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 4),
       );
     } finally {
       isLoading.value = false;
     }
-  }
-
-  void promptGoogleSignIn(BuildContext context) {
-    final googleEmailCtrl = TextEditingController(
-      text: emailController.text.trim(),
-    );
-    final googleNameCtrl = TextEditingController(
-      text: nameController.text.trim(),
-    );
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      backgroundColor: Colors.white,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Image.asset('assets/google_logo.png', width: 28, height: 28),
-                const SizedBox(width: 12),
-                const Text(
-                  'Sign in with Google Account',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Enter your Google account email to sign in directly',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: googleEmailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Google Email Address',
-                hintText: 'yourname@gmail.com',
-                prefixIcon: Icon(Icons.email_outlined),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: googleNameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Your Name (Optional)',
-                hintText: 'e.g. Alex',
-                prefixIcon: Icon(Icons.person_outline),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  final enteredEmail = googleEmailCtrl.text.trim();
-                  if (enteredEmail.isEmpty || !enteredEmail.contains('@')) {
-                    Get.snackbar('Invalid Email', 'Please enter a valid Google email address.');
-                    return;
-                  }
-                  Navigator.pop(ctx);
-                  signInWithGoogle(
-                    customEmail: enteredEmail,
-                    customName: googleNameCtrl.text.trim(),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE91E63),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Continue with Google', style: TextStyle(fontWeight: FontWeight.w700)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void showPhoneLoginSheet(BuildContext context) {
-    final phoneInputCtrl = TextEditingController(
-      text: phoneController.text.trim().isNotEmpty ? phoneController.text.trim() : '+91 ',
-    );
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      backgroundColor: Colors.white,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.smartphone, color: Color(0xFFE91E63), size: 28),
-                SizedBox(width: 12),
-                Text(
-                  'Phone Verification (OTP)',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'We will send a 6-digit verification code to your mobile number',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: phoneInputCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Mobile Number',
-                prefixIcon: Icon(Icons.phone_outlined),
-                hintText: '+91 98765 43210',
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  final phone = phoneInputCtrl.text.trim();
-                  if (phone.isEmpty || phone.length < 8) {
-                    Get.snackbar('Invalid', 'Please enter a valid mobile number');
-                    return;
-                  }
-                  Navigator.pop(ctx);
-                  sendOtp(phone);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE91E63),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Send Verification Code', style: TextStyle(fontWeight: FontWeight.w700)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Future<void> logout() async {

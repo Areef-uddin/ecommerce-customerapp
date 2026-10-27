@@ -1,6 +1,13 @@
 import 'dart:async';
 
 Future<Map<String, dynamic>?> triggerFirebaseGoogleSignIn() async {
-  // Stub for non-web platforms (Android, iOS)
+  return null;
+}
+
+Future<bool> sendFirebasePhoneOtp(String phoneNumber) async {
+  return false;
+}
+
+Future<Map<String, dynamic>?> verifyFirebasePhoneOtp(String code) async {
   return null;
 }

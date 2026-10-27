@@ -156,7 +156,7 @@ class LoginView extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        controller.sendOtp(controller.emailController.text.trim());
+                        Get.toNamed('/forgot-password');
                       },
                       child: const Text(
                         'Forgot Password?',
@@ -202,7 +202,7 @@ class LoginView extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'or continue with',
+                        controller.isLoginTab.value ? 'or sign in with' : 'or sign up with',
                         style: TextStyle(
                           color: Colors.grey.shade500,
                           fontSize: 13,
@@ -223,7 +223,7 @@ class LoginView extends StatelessWidget {
                       assetPath: 'assets/google_logo.png',
                       size: 26,
                       onTap: () {
-                        controller.signInWithGoogle(context: context);
+                        controller.signInWithGoogle();
                       },
                     ),
                     const SizedBox(width: 20),
@@ -231,7 +231,7 @@ class LoginView extends StatelessWidget {
                       assetPath: 'assets/apple.png',
                       size: 26,
                       onTap: () {
-                        controller.signInWithGoogle(customEmail: 'apple.shopper@icloud.com', customName: 'Apple User');
+                        Get.snackbar('Notice', 'Apple Sign-In is configured for iOS devices.');
                       },
                     ),
                     const SizedBox(width: 20),
@@ -239,7 +239,7 @@ class LoginView extends StatelessWidget {
                       icon: Icons.smartphone,
                       size: 22,
                       onTap: () {
-                        controller.showPhoneLoginSheet(context);
+                        Get.toNamed('/forgot-password');
                       },
                     ),
                   ],

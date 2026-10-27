@@ -3,6 +3,7 @@ import 'app_routes.dart';
 import '../../features/auth/views/splash_view.dart';
 import '../../features/auth/views/onboarding_view.dart';
 import '../../features/auth/views/login_view.dart';
+import '../../features/auth/views/forgot_password_view.dart';
 import '../../features/auth/views/otp_verification_view.dart';
 import '../../features/home/views/main_navigation_view.dart';
 import '../../features/category/views/category_view.dart';
@@ -28,6 +29,7 @@ class AppPages {
     GetPage(name: AppRoutes.splash, page: () => const SplashView()),
     GetPage(name: AppRoutes.onboarding, page: () => const OnboardingView()),
     GetPage(name: AppRoutes.login, page: () => const LoginView()),
+    GetPage(name: AppRoutes.forgotPassword, page: () => const ForgotPasswordView()),
     GetPage(name: AppRoutes.otp, page: () => const OtpVerificationView()),
     GetPage(name: AppRoutes.home, page: () => const MainNavigationView()),
     GetPage(name: AppRoutes.category, page: () => const CategoryView()),
