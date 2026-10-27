@@ -1,19 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:js' as js;
+import 'dart:html' as html;
 import 'dart:js_util' as js_util;
 import 'package:flutter/foundation.dart';
 
 Future<Map<String, dynamic>?> triggerFirebaseGoogleSignIn() async {
   try {
-    if (!js.context.hasProperty('signInWithGoogleFirebase')) {
-      throw 'Firebase Auth is still initializing. Please refresh your browser tab (Ctrl+F5).';
+    if (!js_util.hasProperty(html.window, 'signInWithGoogleFirebase')) {
+      throw 'Google Sign-In is initializing. Please refresh the browser tab (Ctrl+Shift+R).';
     }
-    final promise = js.context.callMethod('signInWithGoogleFirebase');
+    final dynamic promise = js_util.callMethod(html.window, 'signInWithGoogleFirebase', []);
     if (promise == null) {
-      throw 'Google Sign-In could not be started. Please reload the browser tab.';
+      throw 'Google Sign-In returned null. Please reload the browser tab.';
     }
-    final result = await js_util.promiseToFuture(promise);
+    final dynamic result = await js_util.promiseToFuture(promise);
     if (result != null) {
       if (result is String) {
         return jsonDecode(result) as Map<String, dynamic>;
@@ -29,12 +29,12 @@ Future<Map<String, dynamic>?> triggerFirebaseGoogleSignIn() async {
 
 Future<bool> sendFirebasePhoneOtp(String phoneNumber) async {
   try {
-    if (!js.context.hasProperty('sendFirebasePhoneOtp')) {
+    if (!js_util.hasProperty(html.window, 'sendFirebasePhoneOtp')) {
       throw 'Firebase Phone Auth is not ready on this page.';
     }
-    final promise = js.context.callMethod('sendFirebasePhoneOtp', [phoneNumber]);
+    final dynamic promise = js_util.callMethod(html.window, 'sendFirebasePhoneOtp', [phoneNumber]);
     if (promise == null) throw 'Failed to initiate Firebase Phone Auth.';
-    final res = await js_util.promiseToFuture(promise);
+    final dynamic res = await js_util.promiseToFuture(promise);
     return res != null;
   } catch (e) {
     debugPrint('Firebase send phone OTP error: $e');
@@ -44,12 +44,12 @@ Future<bool> sendFirebasePhoneOtp(String phoneNumber) async {
 
 Future<Map<String, dynamic>?> verifyFirebasePhoneOtp(String code) async {
   try {
-    if (!js.context.hasProperty('verifyFirebasePhoneOtp')) {
+    if (!js_util.hasProperty(html.window, 'verifyFirebasePhoneOtp')) {
       throw 'Firebase Phone Auth is not ready on this page.';
     }
-    final promise = js.context.callMethod('verifyFirebasePhoneOtp', [code]);
+    final dynamic promise = js_util.callMethod(html.window, 'verifyFirebasePhoneOtp', [code]);
     if (promise == null) throw 'Failed to verify Firebase OTP.';
-    final res = await js_util.promiseToFuture(promise);
+    final dynamic res = await js_util.promiseToFuture(promise);
     if (res != null) {
       if (res is String) return jsonDecode(res) as Map<String, dynamic>;
       return Map<String, dynamic>.from(res as Map);
