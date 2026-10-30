@@ -13,6 +13,7 @@ import '../models/order_model.dart';
 
 class OrdersController extends GetxController {
   final isLoading = true.obs;
+  final allOrders = <OrderModel>[].obs;
   final orders = <OrderModel>[].obs;
   final currentOrder = Rxn<OrderModel>();
   final trackingData = Rxn<ShipmentTrackingModel>();
@@ -29,6 +30,7 @@ class OrdersController extends GetxController {
   final selectedReturnItemId = RxnInt();
   final isBuyingAgain = false.obs;
   bool _isFetchingOrders = false;
+  int _ordersRequestVersion = 0;
 
   @override
   void onInit() {
@@ -39,8 +41,8 @@ class OrdersController extends GetxController {
     } else {
       isLoading.value = false;
     }
-    // Auto-refresh orders every 5 seconds only when user is authenticated
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    // Auto-refresh orders every 10 seconds only when user is authenticated
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       final t = StorageService.getAccessToken();
       if (t != null && t.isNotEmpty) {
         fetchOrders(silent: true);
@@ -57,64 +59,149 @@ class OrdersController extends GetxController {
     super.onClose();
   }
 
+  int countForTab(String tab) {
+    switch (tab.toLowerCase()) {
+      case 'processing':
+        return allOrders
+            .where((o) => [
+                  'processing',
+                  'placed',
+                  'order placed',
+                  'confirmed',
+                  'packed',
+                ].contains(o.orderStatus.toLowerCase()))
+            .length;
+      case 'shipped':
+        return allOrders
+            .where((o) => [
+                  'picked up',
+                  'in transit',
+                  'shipped',
+                  'dispatched',
+                  'out for delivery',
+                ].contains(o.orderStatus.toLowerCase()))
+            .length;
+      case 'delivered':
+        return allOrders
+            .where((o) => o.orderStatus.toLowerCase() == 'delivered')
+            .length;
+      case 'returns':
+      case 'return / refund':
+        return allOrders.where((o) => o.returns.isNotEmpty).length;
+      case 'all':
+      default:
+        return allOrders.length;
+    }
+  }
+
+  void setFilter(String tab) {
+    selectedFilter.value = tab;
+    applyFilter();
+  }
+
+  void applyFilter() {
+    final filter = selectedFilter.value.toLowerCase();
+    List<OrderModel> filtered;
+    if (filter == 'processing') {
+      filtered = allOrders
+          .where((o) => [
+                'processing',
+                'placed',
+                'order placed',
+                'confirmed',
+                'packed',
+              ].contains(o.orderStatus.toLowerCase()))
+          .toList();
+    } else if (filter == 'shipped') {
+      filtered = allOrders
+          .where((o) => [
+                'picked up',
+                'in transit',
+                'shipped',
+                'dispatched',
+                'out for delivery',
+              ].contains(o.orderStatus.toLowerCase()))
+          .toList();
+    } else if (filter == 'delivered') {
+      filtered = allOrders
+          .where((o) => o.orderStatus.toLowerCase() == 'delivered')
+          .toList();
+    } else if (filter == 'returns' || filter == 'return / refund') {
+      filtered = allOrders.where((o) => o.returns.isNotEmpty).toList();
+    } else {
+      filtered = List<OrderModel>.from(allOrders);
+    }
+    orders.assignAll(filtered);
+  }
+
   Future<void> fetchOrders({bool silent = false}) async {
-    if (_isFetchingOrders) return;
+    if (silent && _isFetchingOrders) return;
+    final requestVersion = ++_ordersRequestVersion;
     _isFetchingOrders = true;
     try {
       if (!silent) {
         isLoading.value = true;
         hasError.value = false;
       }
-      String url = ApiEndpoints.orders;
-      if (selectedFilter.value != 'All') {
-        url += '?status=${Uri.encodeComponent(selectedFilter.value)}';
-      }
-
-      final res = await ApiClient.get(url);
+      
+      // Fetch all orders and returns together for complete state
+      final res = await ApiClient.get(ApiEndpoints.orders);
       if (res.data is List) {
-        // Fetch return records independently too, so cards still get status
-        // updates while older API instances are rolling out the nested field.
         List<dynamic> returnRecords = const [];
         try {
-          final returnsResponse = await ApiClient.get(ApiEndpoints.returns);
-          if (returnsResponse.data is List) {
-            returnRecords = returnsResponse.data as List<dynamic>;
+          final returnResponse = await ApiClient.get(ApiEndpoints.returns);
+          if (returnResponse.data is List) {
+            returnRecords = returnResponse.data as List<dynamic>;
           }
         } catch (error) {
-          debugPrint('Could not refresh order return updates: $error');
+          debugPrint('Could not refresh return badges: $error');
         }
+        if (requestVersion != _ordersRequestVersion) return;
         final returnsByOrder = <int, List<Map<String, dynamic>>>{};
         for (final record in returnRecords.whereType<Map>()) {
           final orderId = int.tryParse(record['order'].toString());
           if (orderId == null) continue;
-          returnsByOrder
-              .putIfAbsent(orderId, () => [])
-              .add(Map<String, dynamic>.from(record));
+          returnsByOrder.putIfAbsent(orderId, () => []).add(
+            Map<String, dynamic>.from(record),
+          );
         }
-        orders.assignAll(
-          (res.data as List).whereType<Map>().map((rawOrder) {
-            final json = Map<String, dynamic>.from(rawOrder);
-            final id = int.tryParse(json['id'].toString());
-            final directReturns = id == null
-                ? const <Map<String, dynamic>>[]
-                : returnsByOrder[id] ?? const <Map<String, dynamic>>[];
-            final nestedReturns = (json['returns'] as List?) ?? const [];
-            json['returns'] = directReturns.isNotEmpty
-                ? directReturns
-                : nestedReturns;
-            return OrderModel.fromJson(json);
-          }).toList(),
-        );
+        final parsed = (res.data as List).whereType<Map>().map((rawOrder) {
+          final json = Map<String, dynamic>.from(rawOrder);
+          final id = int.tryParse(json['id'].toString());
+          final directReturns = id == null
+              ? const <Map<String, dynamic>>[]
+              : returnsByOrder[id] ?? const <Map<String, dynamic>>[];
+          json['returns'] = directReturns.isNotEmpty
+              ? directReturns
+              : (json['returns'] as List?) ?? const [];
+          return OrderModel.fromJson(json);
+        }).toList();
+
+        allOrders.assignAll(parsed);
+        applyFilter();
+
+        if (currentOrder.value != null) {
+          final updatedCurrent = parsed.firstWhereOrNull(
+            (o) => o.id == currentOrder.value!.id,
+          );
+          if (updatedCurrent != null) {
+            currentOrder.value = updatedCurrent;
+          }
+        }
+      } else {
+        throw const FormatException('The orders response is not a list.');
       }
     } catch (e) {
       debugPrint('Error fetching orders: $e');
-      if (!silent) {
+      if (!silent && requestVersion == _ordersRequestVersion) {
         hasError.value = true;
         errorMessage.value = 'Failed to load orders. Please try again.';
       }
     } finally {
-      if (!silent) isLoading.value = false;
-      _isFetchingOrders = false;
+      if (requestVersion == _ordersRequestVersion) {
+        _isFetchingOrders = false;
+        isLoading.value = false;
+      }
     }
   }
 

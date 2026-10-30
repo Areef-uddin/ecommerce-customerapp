@@ -1,15 +1,12 @@
-import 'package:flutter/foundation.dart';
-
 class ApiEndpoints {
   static const String serverHost = 'https://ecommerce-backened-jsiy.onrender.com';
+  static const String _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL');
 
-  // Automatically use live production backend on Render
-  static String get baseUrl {
-    if (kDebugMode && kIsWeb) {
-      return 'http://127.0.0.1:8000/api';
-    }
-    return '$serverHost/api';
-  }
+  // The embedded browser cannot reach the host machine's loopback address.
+  // Use Render by default and allow an explicit local override for CLI runs.
+  static String get baseUrl => _apiBaseUrlOverride.isNotEmpty
+      ? _apiBaseUrlOverride
+      : '$serverHost/api';
 
   // Auth endpoints
   static const String register = '/auth/register/';

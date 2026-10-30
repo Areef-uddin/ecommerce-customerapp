@@ -16,6 +16,7 @@ class OrderTrackingView extends StatefulWidget {
 class _OrderTrackingViewState extends State<OrderTrackingView> {
   final controller = Get.put(OrdersController());
   int orderId = 0;
+  bool _showReturnTracking = false;
 
   final List<Map<String, dynamic>> _standardStages = [
     {'title': 'Order Placed', 'icon': Icons.receipt_long, 'code': 'Order Placed'},
@@ -38,6 +39,9 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
       final ord = Get.arguments as OrderModel;
       orderId = ord.id;
       controller.currentOrder.value = ord;
+      if (ord.returns.isNotEmpty) {
+        _showReturnTracking = true;
+      }
       if (ord.shipment != null) {
         controller.trackingData.value = ord.shipment;
       }
@@ -198,9 +202,16 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
         final currentLocation = tracking?.currentLocation ?? order.currentLocation;
         final isDemo = tracking?.isDemoMode ?? true;
 
+        final hasReturns = order.returns.isNotEmpty;
+
         return RefreshIndicator(
           color: AppColors.primary,
-          onRefresh: () => controller.fetchTrackingInfo(orderId),
+          onRefresh: () async {
+            await Future.wait([
+              controller.fetchTrackingInfo(orderId),
+              controller.fetchOrderDetail(orderId, silent: true),
+            ]);
+          },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
@@ -208,48 +219,154 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 840),
                 child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. DEMO TRACKING MODE Banner (Requirement 7)
-                if (isDemo) _buildDemoModeBanner(),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (hasReturns) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => _showReturnTracking = true),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: _showReturnTracking
+                                        ? AppColors.primary
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Center(
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.rotate_left_rounded,
+                                          size: 16,
+                                          color: _showReturnTracking
+                                              ? Colors.white
+                                              : AppColors.textSecondary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Return & Refund Tracking',
+                                          style: TextStyle(
+                                            color: _showReturnTracking
+                                                ? Colors.white
+                                                : AppColors.textSecondary,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => _showReturnTracking = false),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: !_showReturnTracking
+                                        ? AppColors.primary
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Center(
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.local_shipping_outlined,
+                                          size: 16,
+                                          color: !_showReturnTracking
+                                              ? Colors.white
+                                              : AppColors.textSecondary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Delivery Tracking',
+                                          style: TextStyle(
+                                            color: !_showReturnTracking
+                                                ? Colors.white
+                                                : AppColors.textSecondary,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
 
-                const SizedBox(height: 14),
+                    if (hasReturns && _showReturnTracking)
+                      _buildReturnTrackingSection(order)
+                    else ...[
+                      // 1. DEMO TRACKING MODE Banner (Requirement 7)
+                      if (isDemo) _buildDemoModeBanner(),
 
-                // 2. Tracking ID & Carrier Header Card (Requirement 3 & 7)
-                _buildTrackingHeaderCard(trackingNumber, courierName, currentStatus, order.estimatedDelivery),
+                      const SizedBox(height: 14),
 
-                const SizedBox(height: 18),
+                      // 2. Tracking ID & Carrier Header Card (Requirement 3 & 7)
+                      _buildTrackingHeaderCard(
+                        trackingNumber,
+                        courierName,
+                        currentStatus,
+                        order.estimatedDelivery,
+                      ),
 
-                // 3. 7-Stage Horizontal Stepper Visualizer (Requirement 4)
-                _buildSevenStageStepper(currentStepIndex),
+                      const SizedBox(height: 18),
 
-                const SizedBox(height: 18),
+                      // 3. 7-Stage Horizontal Stepper Visualizer (Requirement 4)
+                      _buildSevenStageStepper(currentStepIndex),
 
-                // 4. Current Status Highlight Banner
-                _buildStatusHighlightBanner(currentStatus, currentLocation),
+                      const SizedBox(height: 18),
 
-                const SizedBox(height: 18),
+                      // 4. Current Status Highlight Banner
+                      _buildStatusHighlightBanner(currentStatus, currentLocation),
 
-                // 5. Milestone Activity Feed with Timestamps (Requirement 4 & 6)
-                _buildMilestonesActivityFeed(order, tracking, currentStepIndex),
+                      const SizedBox(height: 18),
 
-                const SizedBox(height: 18),
+                      // 5. Milestone Activity Feed with Timestamps (Requirement 4 & 6)
+                      _buildMilestonesActivityFeed(
+                        order,
+                        tracking,
+                        currentStepIndex,
+                      ),
 
-                // 6. Delivery Partner Card (Requirement 8)
-                _buildDeliveryPartnerCard(order, tracking),
+                      const SizedBox(height: 18),
 
-                const SizedBox(height: 18),
+                      // 6. Delivery Partner Card (Requirement 8)
+                      _buildDeliveryPartnerCard(order, tracking),
 
-                // 7. Delivery Address Card
-                _buildDeliveryAddressCard(order),
+                      const SizedBox(height: 18),
 
-                const SizedBox(height: 30),
-              ],
+                      // 7. Delivery Address Card
+                      _buildDeliveryAddressCard(order),
+
+                      const SizedBox(height: 30),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-    );
+        );
       }),
     );
   }
@@ -860,4 +977,291 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
       ),
     );
   }
+
+  Widget _buildReturnTrackingSection(OrderModel order) {
+    final ret = order.returns.first;
+    final isComplete = ret.status == 'Refund Processed';
+    final isRejected = ret.status == 'Rejected';
+    final color = isComplete
+        ? const Color(0xFF15803D)
+        : isRejected
+        ? const Color(0xFFDC2626)
+        : const Color(0xFFD97706);
+    final bg = isComplete
+        ? const Color(0xFFF0FDF4)
+        : isRejected
+        ? const Color(0xFFFEF2F2)
+        : const Color(0xFFFFFBEB);
+
+    int stageIdx = 0;
+    if (ret.status == 'Pickup Scheduled') stageIdx = 1;
+    if (ret.status == 'Pickup Received' || ret.status == 'Refund Pending') stageIdx = 2;
+    if (ret.status == 'Refund Processed') stageIdx = 3;
+
+    final stages = [
+      {
+        'title': 'Return Initiated',
+        'desc': 'Return requested: ${ret.reason}',
+        'done': true,
+        'active': stageIdx == 0,
+      },
+      {
+        'title': 'Pickup Scheduled',
+        'desc': 'Logistics partner assigned for ${ret.pickupType}',
+        'done': stageIdx >= 1,
+        'active': stageIdx == 1,
+      },
+      {
+        'title': 'Item Received & Inspected',
+        'desc': 'Quality verification at fulfillment center',
+        'done': stageIdx >= 2,
+        'active': stageIdx == 2,
+      },
+      {
+        'title': 'Refund Processed',
+        'desc': '₹${ret.refundAmount.toStringAsFixed(2)} credited to ${order.paymentMethod}',
+        'done': stageIdx >= 3,
+        'active': stageIdx == 3,
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Status Card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isComplete
+                      ? Icons.verified
+                      : isRejected
+                      ? Icons.cancel
+                      : Icons.rotate_left_rounded,
+                  color: color,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Return Status: ${ret.status}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Order ${order.orderNumber} • Refund: ₹${ret.refundAmount.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // Return Stepper Card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Return Progress Milestones',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+              const SizedBox(height: 18),
+              ...List.generate(stages.length, (idx) {
+                final st = stages[idx];
+                final isLast = idx == stages.length - 1;
+                final isDone = st['done'] == true;
+                final isActive = st['active'] == true;
+
+                return IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
+                        children: [
+                          Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isDone
+                                  ? const Color(0xFF15803D)
+                                  : (isActive
+                                      ? const Color(0xFFD97706)
+                                      : const Color(0xFFE2E8F0)),
+                            ),
+                            child: Center(
+                              child: isDone
+                                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                                  : Text(
+                                      '${idx + 1}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          if (!isLast)
+                            Expanded(
+                              child: Container(
+                                width: 2,
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                color: isDone && stageIdx > idx
+                                    ? const Color(0xFF15803D)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                st['title']!.toString(),
+                                style: TextStyle(
+                                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w700,
+                                  fontSize: 14,
+                                  color: isDone || isActive
+                                      ? AppColors.textPrimary
+                                      : AppColors.textMuted,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                st['desc']!.toString(),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDone || isActive
+                                      ? AppColors.textSecondary
+                                      : AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // Timeline Activity Feed
+        if (ret.timeline.isNotEmpty) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Latest Activity Notes',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                ),
+                const SizedBox(height: 12),
+                ...ret.timeline.map((ev) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.check_circle, size: 15, color: Color(0xFF10B981)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${ev.status}: ${ev.note}',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+        ],
+
+        // Buttons
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => Get.toNamed(AppRoutes.returnRefund, arguments: order),
+                icon: const Icon(Icons.receipt_long, size: 16),
+                label: const Text('Return Details'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => setState(() => _showReturnTracking = false),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('View Delivery Tracking'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 30),
+      ],
+    );
+  }
+
 }

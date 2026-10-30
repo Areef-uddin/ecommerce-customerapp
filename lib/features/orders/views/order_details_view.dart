@@ -369,7 +369,7 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
 
                     if (order.returns.isNotEmpty) ...[
                       const Text(
-                        'Return / Refund Updates',
+                        'Return & Refund Tracking',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -377,72 +377,196 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                       ),
                       const SizedBox(height: 10),
                       ...order.returns.map(
-                        (returnRequest) => Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF7F8),
-                            border: Border.all(color: AppColors.border),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                returnRequest.productName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                ),
+                        (returnRequest) {
+                          final isComplete =
+                              returnRequest.status == 'Refund Processed';
+                          final isRejected =
+                              returnRequest.status == 'Rejected';
+                          final themeColor = isComplete
+                              ? const Color(0xFF15803D)
+                              : isRejected
+                              ? const Color(0xFFDC2626)
+                              : const Color(0xFFD97706);
+                          final bgTheme = isComplete
+                              ? const Color(0xFFF0FDF4)
+                              : isRejected
+                              ? const Color(0xFFFEF2F2)
+                              : const Color(0xFFFFFBEB);
+
+                          int stepIdx = 0;
+                          if (returnRequest.status == 'Pickup Scheduled') {
+                            stepIdx = 1;
+                          } else if (returnRequest.status == 'Pickup Received' ||
+                              returnRequest.status == 'Refund Pending') {
+                            stepIdx = 2;
+                          } else if (returnRequest.status == 'Refund Processed') {
+                            stepIdx = 3;
+                          }
+
+                          final stepNames = ['Requested', 'Pickup', 'Received', 'Refunded'];
+
+                          return Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: bgTheme,
+                              border: Border.all(
+                                color: themeColor.withValues(alpha: 0.35),
+                                width: 1.5,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${returnRequest.status} • Refund ₹${returnRequest.refundAmount.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              if (returnRequest.timeline.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                ...returnRequest.timeline.map(
-                                  (event) => Padding(
-                                    padding: const EdgeInsets.only(top: 5),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Icon(
-                                          Icons.check_circle,
-                                          size: 15,
-                                          color: Color(0xFF10B981),
-                                        ),
-                                        const SizedBox(width: 7),
-                                        Expanded(
-                                          child: Text(
-                                            '${event.status} — ${event.note}',
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: AppColors.textSecondary,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      isComplete
+                                          ? Icons.verified
+                                          : isRejected
+                                          ? Icons.cancel
+                                          : Icons.autorenew,
+                                      color: themeColor,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Return Status: ',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 14,
+                                              color: themeColor,
                                             ),
+                                          ),
+                                          Text(
+                                            returnRequest.productName,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 15,
+                                        color: themeColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                // 4-step progress row
+                                Row(
+                                  children: List.generate(
+                                      stepNames.length * 2 - 1, (i) {
+                                    if (i.isOdd) {
+                                      final lIdx = i ~/ 2;
+                                      return Expanded(
+                                        child: Container(
+                                          height: 2,
+                                          color: stepIdx > lIdx
+                                              ? themeColor
+                                              : const Color(0xFFCBD5E1),
+                                        ),
+                                      );
+                                    }
+                                    final sIdx = i ~/ 2;
+                                    final isDone = stepIdx >= sIdx;
+                                    final isCur = stepIdx == sIdx;
+                                    return Column(
+                                      children: [
+                                        Container(
+                                          width: isCur ? 14 : 10,
+                                          height: isCur ? 14 : 10,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: isDone ? themeColor : Colors.white,
+                                            border: Border.all(
+                                              color: isDone
+                                                  ? themeColor
+                                                  : const Color(0xFF94A3B8),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: isDone && !isCur
+                                              ? const Icon(Icons.check,
+                                                  size: 6, color: Colors.white)
+                                              : null,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          stepNames[sIdx],
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: isCur
+                                                ? FontWeight.w800
+                                                : FontWeight.w600,
+                                            color: isDone
+                                                ? themeColor
+                                                : AppColors.textMuted,
                                           ),
                                         ),
                                       ],
+                                    );
+                                  }),
+                                ),
+                                const SizedBox(height: 12),
+                                if (returnRequest.timeline.isNotEmpty) ...[
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      returnRequest.timeline.last.note,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                ],
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => Get.toNamed(
+                                      AppRoutes.returnRefund,
+                                      arguments: order,
+                                    ),
+                                    icon: const Icon(Icons.open_in_new, size: 14),
+                                    label: const Text('View Full Return & Refund Flow'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: themeColor,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 9),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ],
-                            ],
-                          ),
-                        ),
+                            ),
+                          );
+                        },
                       ),
-                      const SizedBox(height: 10),
-                    ],
-
-                    // Return / Refund Action if Delivered
-                    if (order.returnEligible || order.returns.isNotEmpty)
+                      const SizedBox(height: 14),
+                    ] else if (order.returnEligible) ...[
+                      // Return / Refund Action if Delivered & not returned
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
@@ -453,7 +577,7 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
+                            const Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
@@ -464,9 +588,7 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                                   ),
                                 ),
                                 Text(
-                                  order.returnEligible
-                                      ? 'Eligible for return within 7 days of delivery'
-                                      : 'Return window has expired',
+                                  'Eligible for return within 7 days of delivery',
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: AppColors.textSecondary,
@@ -474,27 +596,32 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                                 ),
                               ],
                             ),
-                            TextButton(
-                              onPressed: order.returnEligible
-                                  ? () => Get.toNamed(
-                                      '/return-refund',
-                                      arguments: order.id,
-                                    )
-                                  : null,
+                            ElevatedButton(
+                              onPressed: () => Get.toNamed(
+                                AppRoutes.returnRefund,
+                                arguments: order,
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                              ),
                               child: const Text(
-                                'Return / Refund',
+                                'Return Item',
                                 style: TextStyle(
-                                  color: AppColors.primary,
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 13,
+                                  fontSize: 12,
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    const SizedBox(height: 24),
-
+                      const SizedBox(height: 24),
+                    ],
                     // Vertical Tracking Stepper matching Screen 16
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
