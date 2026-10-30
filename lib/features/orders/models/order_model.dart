@@ -22,8 +22,11 @@ class OrderModel {
   final String deliveryPartnerVehicle;
   final String estimatedDelivery;
   final String createdAt;
+  final bool returnEligible;
+  final String? returnWindowEndsAt;
   final List<OrderItemModel> items;
   final List<OrderTimelineModel> timeline;
+  final List<ReturnRequestModel> returns;
   final ShipmentTrackingModel? shipment;
 
   OrderModel({
@@ -50,8 +53,11 @@ class OrderModel {
     this.deliveryPartnerVehicle = 'KA-01-SH-4421',
     this.estimatedDelivery = '',
     required this.createdAt,
+    this.returnEligible = false,
+    this.returnWindowEndsAt,
     this.items = const [],
     this.timeline = const [],
+    this.returns = const [],
     this.shipment,
   });
 
@@ -93,6 +99,15 @@ class OrderModel {
     }
 
     final int idVal = json['id'] ?? 0;
+    final returnList =
+        (json['returns'] as List?)
+            ?.whereType<Map>()
+            .map(
+              (item) =>
+                  ReturnRequestModel.fromJson(Map<String, dynamic>.from(item)),
+            )
+            .toList() ??
+        <ReturnRequestModel>[];
     final String fallbackTracking = 'TEST-FASH-${1000 + idVal}';
 
     return OrderModel(
@@ -135,11 +150,80 @@ class OrderModel {
           (json['delivery_partner_vehicle'] ?? 'KA-01-SH-4421'),
       estimatedDelivery: json['estimated_delivery'] ?? '',
       createdAt: json['created_at'] ?? '',
+      returnEligible: json['return_eligible'] == true,
+      returnWindowEndsAt: json['return_window_ends_at']?.toString(),
       items: itemsList,
       timeline: tlList,
+      returns: returnList,
       shipment: shipmentModel,
     );
   }
+}
+
+class ReturnRequestModel {
+  final int id;
+  final int orderItemId;
+  final String productName;
+  final String reason;
+  final String pickupType;
+  final String status;
+  final double refundAmount;
+  final String createdAt;
+  final List<ReturnTimelineModel> timeline;
+
+  const ReturnRequestModel({
+    required this.id,
+    required this.orderItemId,
+    required this.productName,
+    required this.reason,
+    required this.pickupType,
+    required this.status,
+    required this.refundAmount,
+    required this.createdAt,
+    this.timeline = const [],
+  });
+
+  factory ReturnRequestModel.fromJson(Map<String, dynamic> json) {
+    final history =
+        (json['timeline'] as List?)
+            ?.whereType<Map>()
+            .map(
+              (item) =>
+                  ReturnTimelineModel.fromJson(Map<String, dynamic>.from(item)),
+            )
+            .toList() ??
+        <ReturnTimelineModel>[];
+    return ReturnRequestModel(
+      id: int.tryParse(json['id'].toString()) ?? 0,
+      orderItemId: int.tryParse(json['order_item'].toString()) ?? 0,
+      productName: json['product_name']?.toString() ?? '',
+      reason: json['reason']?.toString() ?? '',
+      pickupType: json['pickup_type']?.toString() ?? 'Pickup',
+      status: json['status']?.toString() ?? 'Initiated',
+      refundAmount: double.tryParse(json['refund_amount'].toString()) ?? 0,
+      createdAt: json['created_at']?.toString() ?? '',
+      timeline: history,
+    );
+  }
+}
+
+class ReturnTimelineModel {
+  final String status;
+  final String note;
+  final String createdAt;
+
+  const ReturnTimelineModel({
+    required this.status,
+    required this.note,
+    required this.createdAt,
+  });
+
+  factory ReturnTimelineModel.fromJson(Map<String, dynamic> json) =>
+      ReturnTimelineModel(
+        status: json['status']?.toString() ?? '',
+        note: json['note']?.toString() ?? '',
+        createdAt: json['created_at']?.toString() ?? '',
+      );
 }
 
 class OrderItemModel {

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../controllers/orders_controller.dart';
+import '../models/order_model.dart';
 
 import '../../../core/routes/app_routes.dart';
 
@@ -12,7 +13,9 @@ class ReturnRefundView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(OrdersController());
-    final int orderId = Get.arguments as int? ?? 1;
+    final int orderId = Get.arguments is int
+        ? Get.arguments as int
+        : controller.currentOrder.value?.id ?? 0;
     if (controller.currentOrder.value?.id != orderId) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         controller.fetchOrderDetail(orderId, silent: true);
@@ -50,6 +53,28 @@ class ReturnRefundView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Obx(() {
+              final order = controller.currentOrder.value;
+              if (order == null ||
+                  order.id != orderId ||
+                  order.returnEligible) {
+                return const SizedBox.shrink();
+              }
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFED7AA)),
+                ),
+                child: const Text(
+                  'This order is outside the 7-day return window, so a new return cannot be started.',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF9A3412)),
+                ),
+              );
+            }),
             // Step 1: Select Item
             _buildStepHeader(
               '1',
@@ -271,27 +296,62 @@ class ReturnRefundView extends StatelessWidget {
             }),
             const SizedBox(height: 32),
 
+            Obx(() {
+              final order = controller.currentOrder.value;
+              final itemId = controller.selectedReturnItemId.value;
+              final matches =
+                  order?.returns
+                      .where((request) => request.orderItemId == itemId)
+                      .toList() ??
+                  <ReturnRequestModel>[];
+              return matches.isEmpty
+                  ? const SizedBox.shrink()
+                  : _buildReturnStatus(matches.last);
+            }),
+            const SizedBox(height: 16),
+
             // Initiate Return Button
-            Obx(
-              () => SizedBox(
+            Obx(() {
+              final order = controller.currentOrder.value;
+              final itemId = controller.selectedReturnItemId.value;
+              final matches =
+                  order?.returns
+                      .where((request) => request.orderItemId == itemId)
+                      .toList() ??
+                  <ReturnRequestModel>[];
+              final currentReturn = matches.isEmpty ? null : matches.last;
+              final alreadyOpen =
+                  currentReturn != null && currentReturn.status != 'Rejected';
+              final eligible = order?.returnEligible == true;
+              return SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: controller.isSubmittingReturn.value
+                  onPressed:
+                      controller.isSubmittingReturn.value ||
+                          !eligible ||
+                          itemId == null ||
+                          alreadyOpen
                       ? null
                       : () => controller.initiateReturn(orderId),
                   child: controller.isSubmittingReturn.value
                       ? const SizedBox(
-                          height: 20,
                           width: 20,
+                          height: 20,
                           child: CircularProgressIndicator(
                             color: Colors.white,
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text('Initiate Return'),
+                      : Text(
+                          alreadyOpen
+                              ? 'Return ${currentReturn.status}'
+                              : currentReturn?.status == 'Rejected'
+                              ? 'Request Return Again'
+                              : 'Initiate Return',
+                        ),
                 ),
-              ),
-            ),
+              );
+            }),
           ],
         ),
       ),
@@ -340,6 +400,61 @@ class ReturnRefundView extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReturnStatus(ReturnRequestModel request) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBBF7D0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Return status: ${request.status}',
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Estimated refund ₹${request.refundAmount.toStringAsFixed(2)} • ${request.pickupType}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...request.timeline.map(
+            (event) => Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.check_circle,
+                    size: 16,
+                    color: Color(0xFF10B981),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${event.status} — ${event.note}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

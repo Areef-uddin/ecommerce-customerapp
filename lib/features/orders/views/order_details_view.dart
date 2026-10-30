@@ -244,11 +244,19 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Status: ${order.orderStatus} • Tap to view live tracking',
+                                    'Status: ${order.orderStatus} • Payment: ${order.paymentStatus}',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       color: Color(0xFF15803D),
                                       fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Text(
+                                    'Tap to view live tracking',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Color(0xFF15803D),
                                     ),
                                   ),
                                 ],
@@ -359,53 +367,132 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                       const SizedBox(height: 24),
                     ],
 
-                    // Return / Refund Action if Delivered
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF9FAFB),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
+                    if (order.returns.isNotEmpty) ...[
+                      const Text(
+                        'Return / Refund Updates',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Column(
+                      const SizedBox(height: 10),
+                      ...order.returns.map(
+                        (returnRequest) => Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF7F8),
+                            border: Border.all(color: AppColors.border),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Need to return this item?',
-                                style: TextStyle(
+                                returnRequest.productName,
+                                style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 13,
                                 ),
                               ),
+                              const SizedBox(height: 4),
                               Text(
-                                '7-day return guarantee available',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary,
+                                '${returnRequest.status} • Refund ₹${returnRequest.refundAmount.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
                                 ),
                               ),
+                              if (returnRequest.timeline.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                ...returnRequest.timeline.map(
+                                  (event) => Padding(
+                                    padding: const EdgeInsets.only(top: 5),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(
+                                          Icons.check_circle,
+                                          size: 15,
+                                          color: Color(0xFF10B981),
+                                        ),
+                                        const SizedBox(width: 7),
+                                        Expanded(
+                                          child: Text(
+                                            '${event.status} — ${event.note}',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
-                          TextButton(
-                            onPressed: () => Get.toNamed(
-                              '/return-refund',
-                              arguments: order.id,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+
+                    // Return / Refund Action if Delivered
+                    if (order.returnEligible || order.returns.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF9FAFB),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Need to return this item?',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                Text(
+                                  order.returnEligible
+                                      ? 'Eligible for return within 7 days of delivery'
+                                      : 'Return window has expired',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
-                            child: const Text(
-                              'Return / Refund',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
+                            TextButton(
+                              onPressed: order.returnEligible
+                                  ? () => Get.toNamed(
+                                      '/return-refund',
+                                      arguments: order.id,
+                                    )
+                                  : null,
+                              child: const Text(
+                                'Return / Refund',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 24),
 
                     // Vertical Tracking Stepper matching Screen 16

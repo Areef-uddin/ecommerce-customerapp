@@ -133,34 +133,45 @@ class OrdersController extends GetxController {
 
   Future<void> initiateReturn(int orderId) async {
     try {
+      final itemId = selectedReturnItemId.value;
+      if (itemId == null) {
+        Get.snackbar('Choose an item', 'Select the item you want to return.');
+        return;
+      }
       isSubmittingReturn.value = true;
       await ApiClient.post(
         ApiEndpoints.returns,
         data: {
           'order_id': orderId,
-          if (selectedReturnItemId.value != null)
-            'order_item_id': selectedReturnItemId.value,
+          'order_item_id': itemId,
           'reason': selectedReason.value,
           'pickup_type': pickupType.value,
         },
       );
 
+      await Future.wait([
+        fetchOrderDetail(orderId, silent: true),
+        fetchOrders(silent: true),
+      ]);
       Get.back();
       Get.snackbar(
         'Return Requested',
-        'We will review your request and update pickup and refund status here.',
+        'Your return status and every update will appear in Order Details and Notifications.',
       );
-      fetchOrders();
     } catch (e) {
       var message = 'Failed to initiate return';
       if (e is DioException && e.response?.data is Map) {
-        final detail = (e.response!.data as Map)['detail'];
-        if (detail is String) message = detail;
+        final data = e.response!.data as Map;
+        final detail = data['detail'] ?? data['message'];
+        if (detail is String && detail.isNotEmpty) message = detail;
       } else if (e is DioException && e.response?.data is String) {
         final detail = (e.response!.data as String).trim();
         if (detail.isNotEmpty) message = detail;
       } else if (e is DioException && e.response == null) {
         message = 'Could not reach the return service. Check your connection and try again.';
+      } else if (e is DioException) {
+        message =
+            'Return request failed (HTTP ${e.response?.statusCode ?? 'unknown'}). Please refresh the order and try again.';
       }
       Get.snackbar('Return unavailable', message);
     } finally {
