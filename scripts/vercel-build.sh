@@ -21,6 +21,10 @@ if [[ ! -x "${FLUTTER_ROOT}/bin/flutter" ]]; then
   rm -f "${FLUTTER_ARCHIVE}"
 fi
 
+# Fix git dubious ownership check in CI / Vercel container
+git config --global --add safe.directory '*' || true
+git config --global --add safe.directory "${FLUTTER_ROOT}" || true
+
 export PATH="${FLUTTER_ROOT}/bin:${PATH}"
 flutter config --enable-web --no-analytics
 flutter pub get
