@@ -786,117 +786,128 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     ),
                   ),
 
-                  // 3. FIXED BOTTOM BAR: [🛒³]  [Add to Cart]  [⚡ Buy Now] (EXACT IMAGE 2)
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      border: Border(top: BorderSide(color: Color(0xFFF1F5F9), width: 1.5)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(0x0C000000),
-                          blurRadius: 10,
-                          offset: Offset(0, -4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        // Cart icon button with item badge
-                        GestureDetector(
-                          onTap: () => Get.toNamed(AppRoutes.cart),
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
-                                  color: Colors.white,
+                  // 3. FIXED BOTTOM BAR: [🛒³]  [Add to Cart]  [⚡ Buy Now]
+                  SafeArea(
+                    top: false,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        border: Border(top: BorderSide(color: Color(0xFFF1F5F9), width: 1.5)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0x0C000000),
+                            blurRadius: 10,
+                            offset: Offset(0, -4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          // Cart icon button with item badge
+                          GestureDetector(
+                            onTap: () => Get.toNamed(AppRoutes.cart),
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+                                    color: Colors.white,
+                                  ),
+                                  child: const Icon(Icons.shopping_cart_outlined, size: 22, color: Color(0xFF0F172A)),
                                 ),
-                                child: const Icon(Icons.shopping_cart_outlined, size: 22, color: Color(0xFF0F172A)),
+                                Positioned(
+                                  top: -4,
+                                  right: -4,
+                                  child: Obx(() {
+                                    final count = cartController.totalQuantity;
+                                    if (count <= 0) return const SizedBox.shrink();
+                                    return Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFE11D48),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        '$count',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          height: 1,
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+
+                          // Add to Cart (Outlined button, rounded 14px)
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: controller.isAddingToCart.value ? null : () => controller.addToCart(),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Color(0xFF0F172A), width: 1.8),
+                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                               ),
-                              Positioned(
-                                top: -4,
-                                right: -4,
-                                child: Obx(() {
-                                  final count = cartController.totalQuantity;
-                                  if (count <= 0) return const SizedBox.shrink();
-                                  return Container(
-                                    padding: const EdgeInsets.all(5),
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFE11D48),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Text(
-                                      '$count',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        height: 1,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'Add to Cart',
+                                  maxLines: 1,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: const Color(0xFF0F172A),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+
+                          // Buy Now (Vibrant pink filled button with lightning icon)
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: controller.isAddingToCart.value ? null : () => controller.buyNow(),
+                              icon: const Icon(Icons.flash_on_rounded, size: 16, color: Colors.white),
+                              label: controller.isAddingToCart.value
+                                  ? const SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                    )
+                                  : FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        'Buy Now',
+                                        maxLines: 1,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 14,
+                                        ),
                                       ),
                                     ),
-                                  );
-                                }),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Add to Cart (Outlined button, rounded 14px)
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: controller.isAddingToCart.value ? null : () => controller.addToCart(),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFF0F172A), width: 1.8),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            ),
-                            child: Text(
-                              'Add to Cart',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFF0F172A),
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE11D48),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Buy Now (Vibrant pink filled button with lightning icon)
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: controller.isAddingToCart.value ? null : () => controller.buyNow(),
-                            icon: const Icon(Icons.flash_on_rounded, size: 18, color: Colors.white),
-                            label: controller.isAddingToCart.value
-                                ? const SizedBox(
-                                    height: 18,
-                                    width: 18,
-                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                  )
-                                : Text(
-                                    'Buy Now',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE11D48),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],

@@ -754,18 +754,53 @@ class _VirtualTryOnViewState extends State<VirtualTryOnView> {
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {
+                onPressed: () async {
                   if (product != null) {
-                    cartController.fetchCart();
-                    Get.toNamed(AppRoutes.cart);
+                    try {
+                      String defaultSize = 'M';
+                      if (product.sizes is List && (product.sizes as List).isNotEmpty) {
+                        defaultSize = (product.sizes as List).first.toString();
+                      }
+                      String defaultColor = 'Standard';
+                      if (product.colors is List && (product.colors as List).isNotEmpty) {
+                        final c = (product.colors as List).first;
+                        defaultColor = (c is Map && c['name'] != null) ? c['name'] : (c?.name ?? 'Standard');
+                      }
+
+                      await ApiClient.post(ApiEndpoints.cart, data: {
+                        'product_id': product.id,
+                        'quantity': 1,
+                        'size': defaultSize,
+                        'color': defaultColor,
+                      });
+                      await cartController.fetchCart();
+                      Get.snackbar(
+                        'Added to Bag',
+                        '${product.name} is now in your shopping bag!',
+                        backgroundColor: const Color(0xFF10B981),
+                        colorText: Colors.white,
+                        snackPosition: SnackPosition.TOP,
+                      );
+                      Get.toNamed(AppRoutes.cart);
+                    } catch (_) {
+                      cartController.fetchCart();
+                      Get.toNamed(AppRoutes.cart);
+                    }
                   }
                 },
                 icon: const Icon(Icons.shopping_bag_outlined, size: 16),
-                label: const Text('Add to Bag', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                label: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Add to Bag',
+                    maxLines: 1,
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE11D48),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
@@ -778,11 +813,18 @@ class _VirtualTryOnViewState extends State<VirtualTryOnView> {
                   controller.currentJob.value = null; // Re-run or change photo
                 },
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Generate Again', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                label: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Generate Again',
+                    maxLines: 1,
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF0F172A),
                   side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),

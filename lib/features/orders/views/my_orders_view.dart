@@ -433,9 +433,13 @@ class MyOrdersView extends StatelessWidget {
                     onPressed: () =>
                         Get.toNamed(AppRoutes.returnRefund, arguments: order),
                     icon: const Icon(Icons.rotate_left_rounded, size: 16),
-                    label: const Text(
-                      'Track Return & Refund',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'Track Return & Refund',
+                        maxLines: 1,
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFE11D48),
@@ -454,9 +458,13 @@ class MyOrdersView extends StatelessWidget {
                     onPressed: () =>
                         Get.toNamed(AppRoutes.orderDetails, arguments: order),
                     icon: const Icon(Icons.receipt_long_outlined, size: 16),
-                    label: const Text(
-                      'View Details',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'View Details',
+                        maxLines: 1,
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF0F172A),
@@ -503,9 +511,13 @@ class MyOrdersView extends StatelessWidget {
                     onPressed: () =>
                         Get.toNamed(AppRoutes.orderTracking, arguments: order),
                     icon: const Icon(Icons.local_shipping_outlined, size: 16),
-                    label: const Text(
-                      'Track Order',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'Track Order',
+                        maxLines: 1,
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFE11D48),
@@ -524,9 +536,13 @@ class MyOrdersView extends StatelessWidget {
                     onPressed: () =>
                         Get.toNamed(AppRoutes.orderDetails, arguments: order),
                     icon: const Icon(Icons.receipt_long_outlined, size: 16),
-                    label: const Text(
-                      'View Details',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'View Details',
+                        maxLines: 1,
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF0F172A),

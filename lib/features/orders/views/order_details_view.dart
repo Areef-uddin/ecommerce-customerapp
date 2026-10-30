@@ -304,6 +304,8 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                                 children: [
                                   Text(
                                     firstItem.productName,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14,
