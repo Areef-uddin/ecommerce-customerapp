@@ -152,11 +152,14 @@ class _CartViewState extends State<CartView> {
         return RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () => controller.fetchCart(),
-          child: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 850),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   children: [
                     // 1. Free Express Shipping Banner
                     Container(
@@ -460,9 +463,11 @@ class _CartViewState extends State<CartView> {
               ),
             ],
           ),
-        );
-      }),
+        ),
+      ),
     );
+  }),
+);
   }
 
   Widget _buildCartCard(CartItemModel item, CartController controller) {

@@ -21,6 +21,7 @@ import '../../features/wishlist/views/wishlist_view.dart';
 import '../../features/profile/views/profile_view.dart';
 import '../../features/support/views/help_support_view.dart';
 import '../../features/notifications/views/notifications_view.dart';
+import '../../features/virtual_tryon/views/virtual_tryon_view.dart';
 
 class AppPages {
   static const initial = AppRoutes.splash;
@@ -47,5 +48,6 @@ class AppPages {
     GetPage(name: AppRoutes.profile, page: () => const ProfileView()),
     GetPage(name: AppRoutes.helpSupport, page: () => const HelpSupportView()),
     GetPage(name: AppRoutes.notifications, page: () => const NotificationsView()),
+    GetPage(name: AppRoutes.virtualTryOn, page: () => const VirtualTryOnView()),
   ];
 }

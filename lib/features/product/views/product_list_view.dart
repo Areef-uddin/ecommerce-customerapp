@@ -18,7 +18,7 @@ class _ProductListViewState extends State<ProductListView> {
   void initState() {
     super.initState();
     final args = Get.parameters;
-    controller.pageTitle.value = args['title'] ?? 'Dresses (124)';
+    controller.pageTitle.value = args['title'] ?? 'Products';
     controller.fetchProductList(
       category: args['category'],
       subcategory: args['subcategory'],
@@ -32,23 +32,27 @@ class _ProductListViewState extends State<ProductListView> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Color(0xFF0F172A)),
           onPressed: () => Get.back(),
         ),
         title: Obx(
           () => Text(
             controller.pageTitle.value,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 18,
+              color: Color(0xFF0F172A),
+              letterSpacing: -0.3,
+            ),
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.shopping_bag_outlined),
+            icon: const Icon(Icons.shopping_bag_outlined, color: Color(0xFF0F172A), size: 24),
             onPressed: () => Get.toNamed('/cart'),
           ),
         ],
@@ -58,167 +62,255 @@ class _ProductListViewState extends State<ProductListView> {
           return const Center(child: CircularProgressIndicator(color: AppColors.primary));
         }
 
-        return Column(
-          children: [
-            // Filter Bar matching Screen 7: Sort, Filter, Grid
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.border)),
-              ),
-              child: Row(
-                children: [
-                  // Sort button
-                  InkWell(
-                    onTap: () {
-                      controller.toggleSort();
-                      controller.fetchProductList();
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.swap_vert, size: 18, color: AppColors.textPrimary),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Sort: ${controller.currentSort.value == 'newest' ? 'Newest' : controller.currentSort.value == 'price_low_high' ? 'Price: Low' : 'Price: High'}',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1280),
+            child: Column(
+              children: [
+                // Filter & Sort Bar
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+                  ),
+                  child: Row(
+                    children: [
+                      // Sort button
+                      InkWell(
+                        onTap: () {
+                          controller.toggleSort();
+                          controller.fetchProductList();
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.swap_vert_rounded, size: 18, color: Color(0xFF0F172A)),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Sort: ${controller.currentSort.value == 'newest' ? 'Newest' : controller.currentSort.value == 'price_low_high' ? 'Price: Low' : 'Price: High'}',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                  const Spacer(),
-                  // Filter button
-                  InkWell(
-                    onTap: () {},
-                    borderRadius: BorderRadius.circular(8),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      child: Row(
-                        children: [
-                          Icon(Icons.tune, size: 18, color: AppColors.textPrimary),
-                          SizedBox(width: 4),
-                          Text('Filter', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                        ],
+                      const Spacer(),
+                      // Filter button
+                      InkWell(
+                        onTap: () {},
+                        borderRadius: BorderRadius.circular(8),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          child: Row(
+                            children: [
+                              Icon(Icons.tune_rounded, size: 18, color: Color(0xFF0F172A)),
+                              SizedBox(width: 4),
+                              Text('Filter', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      // Grid / List Toggle
+                      IconButton(
+                        icon: Icon(
+                          controller.isGridView.value ? Icons.grid_view_rounded : Icons.view_list_rounded,
+                          size: 20,
+                          color: const Color(0xFF0F172A),
+                        ),
+                        onPressed: () => controller.isGridView.toggle(),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  // Grid Toggle button
-                  IconButton(
-                    icon: Icon(
-                      controller.isGridView.value ? Icons.grid_view : Icons.view_list,
-                      size: 20,
-                    ),
-                    onPressed: () => controller.isGridView.toggle(),
-                  ),
-                ],
-              ),
-            ),
+                ),
 
-            // Products Grid / List
-            Expanded(
-              child: controller.products.isEmpty
-                  ? const Center(child: Text('No products available'))
-                  : GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: controller.isGridView.value ? 2 : 1,
-                        childAspectRatio: controller.isGridView.value ? 0.62 : 1.3,
-                        crossAxisSpacing: 14,
-                        mainAxisSpacing: 18,
-                      ),
-                      itemCount: controller.products.length,
-                      itemBuilder: (context, idx) {
-                        final product = controller.products[idx];
-                        return _buildProductCard(product);
-                      },
-                    ),
+                // Responsive Products Grid / List
+                Expanded(
+                  child: controller.products.isEmpty
+                      ? const Center(child: Text('No products available', style: TextStyle(fontWeight: FontWeight.w600)))
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            int crossAxisCount = 2;
+                            if (!controller.isGridView.value) {
+                              crossAxisCount = constraints.maxWidth > 900 ? 2 : 1;
+                            } else {
+                              if (constraints.maxWidth > 1150) {
+                                crossAxisCount = 5;
+                              } else if (constraints.maxWidth > 850) {
+                                crossAxisCount = 4;
+                              } else if (constraints.maxWidth > 580) {
+                                crossAxisCount = 3;
+                              } else {
+                                crossAxisCount = 2;
+                              }
+                            }
+
+                            final childRatio = controller.isGridView.value ? 0.65 : 1.35;
+
+                            return GridView.builder(
+                              padding: const EdgeInsets.all(16),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                childAspectRatio: childRatio,
+                                crossAxisSpacing: 14,
+                                mainAxisSpacing: 18,
+                              ),
+                              itemCount: controller.products.length,
+                              itemBuilder: (context, idx) {
+                                final product = controller.products[idx];
+                                return _buildProductCard(product);
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       }),
     );
   }
 
   Widget _buildProductCard(ProductModel product) {
+    final origPrice = product.originalPrice;
+    int discount = 0;
+    if (origPrice != null && origPrice > product.price) {
+      discount = (((origPrice - product.price) / origPrice) * 100).round();
+    }
+
     return GestureDetector(
       onTap: () => Get.toNamed('/product-detail', arguments: product.id),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      product.primaryImage,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(color: const Color(0xFFFCE4EC)),
+                    ),
+                  ),
+                  if (discount > 0)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '$discount% OFF',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.92),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        product.isWishlisted ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                        size: 16,
+                        color: product.isWishlisted ? AppColors.primary : const Color(0xFF1E293B),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              (product.categoryName.isNotEmpty ? product.categoryName : 'FASHION').toUpperCase(),
+              style: const TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF94A3B8),
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              product.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            ),
+            const SizedBox(height: 3),
+            Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.network(
-                    product.primaryImage,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: AppColors.primaryLight),
-                  ),
+                Text(
+                  '₹${product.price.toInt()}',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      product.isWishlisted ? Icons.favorite : Icons.favorite_border,
-                      size: 18,
-                      color: product.isWishlisted ? AppColors.primary : AppColors.textPrimary,
+                if (origPrice != null && origPrice > product.price) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    '₹${origPrice.toInt()}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      decoration: TextDecoration.lineThrough,
+                      color: Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
+                const SizedBox(width: 3),
+                Text(
+                  '${product.rating}',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            product.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Text(
-                '₹${product.price.toInt()}',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-              ),
-              if (product.originalPrice != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  '₹${product.originalPrice!.toInt()}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    decoration: TextDecoration.lineThrough,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(Icons.star, size: 14, color: AppColors.star),
-              const SizedBox(width: 4),
-              Text(
-                '${product.rating} (${(product.reviewCount / 1000).toStringAsFixed(1)}k)',
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../controllers/orders_controller.dart';
+
+import '../../../core/routes/app_routes.dart';
 
 class ReturnRefundView extends StatelessWidget {
   const ReturnRefundView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<OrdersController>();
+    final controller = Get.put(OrdersController());
     final int orderId = Get.arguments as int? ?? 1;
+    if (controller.currentOrder.value?.id != orderId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.fetchOrderDetail(orderId, silent: true);
+      });
+    }
 
     final reasons = [
       'Size too small',
@@ -24,9 +32,18 @@ class ReturnRefundView extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Get.back();
+            } else {
+              Get.offNamed(AppRoutes.myOrders);
+            }
+          },
         ),
-        title: const Text('Return / Refund', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        title: const Text(
+          'Return / Refund',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -34,7 +51,11 @@ class ReturnRefundView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Step 1: Select Item
-            _buildStepHeader('1', 'Select Item', 'Choose the item you want to return'),
+            _buildStepHeader(
+              '1',
+              'Select Item',
+              'Choose the item you want to return',
+            ),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -42,26 +63,74 @@ class ReturnRefundView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 color: const Color(0xFFFFF1F2),
               ),
-              child: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: AppColors.primary, size: 22),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Floral Maxi Dress', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                        Text('₹1,299 • Size: M', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              child: Obx(() {
+                final order = controller.currentOrder.value;
+                if (order == null ||
+                    order.id != orderId ||
+                    order.items.isEmpty) {
+                  return const Text(
+                    'Loading items…',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  );
+                }
+                return Column(
+                  children: order.items.map((item) {
+                    final selected =
+                        controller.selectedReturnItemId.value == item.id;
+                    return InkWell(
+                      onTap: () =>
+                          controller.selectedReturnItemId.value = item.id,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            Icon(
+                              selected
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked,
+                              color: selected
+                                  ? AppColors.primary
+                                  : AppColors.textMuted,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.productName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    '₹${(item.price * item.quantity).toStringAsFixed(0)} • Qty: ${item.quantity} • Size: ${item.size}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              }),
             ),
             const SizedBox(height: 24),
 
             // Step 2: Select Reason
-            _buildStepHeader('2', 'Select Reason', 'Tell us why you are returning'),
+            _buildStepHeader(
+              '2',
+              'Select Reason',
+              'Tell us why you are returning',
+            ),
             Obx(
               () => Column(
                 children: reasons.map((r) {
@@ -72,7 +141,9 @@ class ReturnRefundView extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        border: Border.all(color: isSel ? AppColors.primary : AppColors.border),
+                        border: Border.all(
+                          color: isSel ? AppColors.primary : AppColors.border,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -82,11 +153,24 @@ class ReturnRefundView extends StatelessWidget {
                             height: 18,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: isSel ? AppColors.primary : AppColors.textMuted, width: isSel ? 5 : 1.5),
+                              border: Border.all(
+                                color: isSel
+                                    ? AppColors.primary
+                                    : AppColors.textMuted,
+                                width: isSel ? 5 : 1.5,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
-                          Expanded(child: Text(r, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                          Expanded(
+                            child: Text(
+                              r,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -110,7 +194,9 @@ class ReturnRefundView extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           color: isSel ? AppColors.primaryLight : Colors.white,
-                          border: Border.all(color: isSel ? AppColors.primary : AppColors.border),
+                          border: Border.all(
+                            color: isSel ? AppColors.primary : AppColors.border,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Center(
@@ -118,7 +204,9 @@ class ReturnRefundView extends StatelessWidget {
                             mode,
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: isSel ? AppColors.primary : AppColors.textPrimary,
+                              color: isSel
+                                  ? AppColors.primary
+                                  : AppColors.textPrimary,
                               fontSize: 13,
                             ),
                           ),
@@ -132,27 +220,55 @@ class ReturnRefundView extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Step 4: Refund
-            _buildStepHeader('4', 'Refund', 'Refund after pickup (3-5 days)'),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: AppColors.primary, size: 20),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Full refund of ₹1,299 will be transferred to your original payment method.',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
-                    ),
-                  ),
-                ],
-              ),
+            _buildStepHeader(
+              '4',
+              'Refund',
+              'Final amount confirmed after return review',
             ),
+            Obx(() {
+              final order = controller.currentOrder.value;
+              final item = order?.items.firstWhereOrNull(
+                (i) => i.id == controller.selectedReturnItemId.value,
+              );
+              final subtotal = item == null ? 0.0 : item.price * item.quantity;
+              final estimated = order == null || order.itemTotal <= 0
+                  ? subtotal
+                  : (subtotal -
+                            (order.discountAmount * subtotal / order.itemTotal))
+                        .clamp(0.0, subtotal);
+              final cod =
+                  order?.paymentMethod == 'Cash on Delivery' ||
+                  order?.paymentMethod == 'COD';
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Estimated refund ₹${estimated.toStringAsFixed(2)} after item discount. '
+                        '${cod ? 'COD refunds are transferred manually after approval.' : 'Approved online refunds go to the original payment method.'}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
             const SizedBox(height: 32),
 
             // Initiate Return Button
@@ -160,9 +276,18 @@ class ReturnRefundView extends StatelessWidget {
               () => SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: controller.isSubmittingReturn.value ? null : () => controller.initiateReturn(orderId),
+                  onPressed: controller.isSubmittingReturn.value
+                      ? null
+                      : () => controller.initiateReturn(orderId),
                   child: controller.isSubmittingReturn.value
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
                       : const Text('Initiate Return'),
                 ),
               ),
@@ -181,15 +306,39 @@ class ReturnRefundView extends StatelessWidget {
           Container(
             width: 24,
             height: 24,
-            decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-            child: Center(child: Text(number, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12))),
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-              Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ],
           ),
         ],

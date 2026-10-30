@@ -42,10 +42,20 @@ class ProductModel {
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    String cleanUrl(String url) {
+      if (url.startsWith('/media/') || url.startsWith('media/')) {
+        return 'https://ecommerce-backened-jsiy.onrender.com/${url.replaceAll(RegExp(r"^/+"), "")}';
+      }
+      return url;
+    }
+
     List<String> imgList = [];
     if (json['images'] != null) {
       for (var img in json['images']) {
-        imgList.add(img['image_url'] ?? '');
+        final u = (img['image_url'] ?? '').toString();
+        if (u.isNotEmpty) {
+          imgList.add(cleanUrl(u));
+        }
       }
     }
 
@@ -63,8 +73,9 @@ class ProductModel {
       }
     }
 
-    final primImg = json['primary_image'] ??
+    final rawPrim = json['primary_image'] ??
         (imgList.isNotEmpty ? imgList.first : 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600');
+    final primImg = cleanUrl(rawPrim.toString());
 
     return ProductModel(
       id: json['id'] ?? 0,

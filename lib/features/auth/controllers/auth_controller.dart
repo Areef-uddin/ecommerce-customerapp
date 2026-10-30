@@ -206,28 +206,17 @@ class AuthController extends GetxController {
       startOtpTimer();
       Get.toNamed('/otp');
 
-      if (receivedOtp.isNotEmpty) {
-        Get.snackbar(
-          'Verification Code',
-          'Your OTP for $formattedPhone is: $receivedOtp',
-          backgroundColor: const Color(0xFF0F172A),
-          colorText: const Color(0xFF38BDF8),
-          icon: const Icon(Icons.sms_outlined, color: Color(0xFF38BDF8)),
-          snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 10),
-          margin: const EdgeInsets.all(12),
-          borderRadius: 12,
-        );
-      } else {
-        Get.snackbar(
-          'Code Sent',
-          'Verification OTP sent to $formattedPhone via SMS.',
-          backgroundColor: const Color(0xFF10B981),
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 4),
-        );
-      }
+      Get.snackbar(
+        'Code Sent',
+        'A 6-digit verification code has been sent to $formattedPhone via SMS.',
+        backgroundColor: const Color(0xFF10B981),
+        colorText: Colors.white,
+        icon: const Icon(Icons.sms_outlined, color: Colors.white),
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 4),
+        margin: const EdgeInsets.all(12),
+        borderRadius: 12,
+      );
     } catch (e) {
       final msg = _extractErrorMessage(e, 'Failed to send verification code');
       Get.snackbar('Error', msg,
@@ -301,6 +290,7 @@ class AuthController extends GetxController {
 
       // Real Firebase Google Sign-In popup
       final googleUser = await triggerFirebaseGoogleSignIn();
+
       if (googleUser == null || googleUser['email'] == null) {
         return;
       }
@@ -309,6 +299,25 @@ class AuthController extends GetxController {
       final name = googleUser['name']?.toString().trim() ?? email.split('@')[0];
       final avatar = googleUser['avatar']?.toString() ?? 'https://lh3.googleusercontent.com/a/default-user';
 
+      await _authenticateWithBackendGoogle(email, name, avatar);
+    } catch (e) {
+      final msg = _extractErrorMessage(e, 'Google Sign-In failed');
+      Get.snackbar(
+        'Google Sign-In',
+        msg,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 4),
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> _authenticateWithBackendGoogle(String email, String name, String avatar) async {
+    try {
+      isLoading.value = true;
       final res = await ApiClient.post(ApiEndpoints.google, data: {
         'email': email,
         'name': name.isNotEmpty ? name : email.split('@')[0],
@@ -332,15 +341,9 @@ class AuthController extends GetxController {
 
       Get.offAllNamed('/home');
     } catch (e) {
-      final msg = _extractErrorMessage(e, 'Google Sign-In failed');
-      Get.snackbar(
-        'Google Sign-In',
-        msg,
-        backgroundColor: Colors.redAccent,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 4),
-      );
+      final msg = _extractErrorMessage(e, 'Google authentication failed');
+      Get.snackbar('Google Authentication', msg,
+          backgroundColor: Colors.redAccent, colorText: Colors.white, snackPosition: SnackPosition.TOP);
     } finally {
       isLoading.value = false;
     }

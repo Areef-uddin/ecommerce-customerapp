@@ -25,9 +25,26 @@ class ApiClient {
         },
         onError: (DioException error, handler) async {
           if (error.response?.statusCode == 401) {
-            // Token expired or invalid
-            await StorageService.clearAuth();
-            getx.Get.offAllNamed('/login');
+            final path = error.requestOptions.path;
+            final isAuthEndpoint = path.contains('/login') ||
+                path.contains('/register') ||
+                path.contains('/otp') ||
+                path.contains('/google') ||
+                path.contains('/token');
+
+            if (!isAuthEndpoint) {
+              await StorageService.clearAuth();
+              final currentRoute = getx.Get.currentRoute;
+              final isGuestRoute = currentRoute == '/login' ||
+                  currentRoute == '/forgot-password' ||
+                  currentRoute == '/otp' ||
+                  currentRoute == '/splash' ||
+                  currentRoute == '/onboarding';
+
+              if (!isGuestRoute) {
+                getx.Get.offAllNamed('/login');
+              }
+            }
           }
           return handler.next(error);
         },
@@ -39,8 +56,8 @@ class ApiClient {
     return await dio.get(path, queryParameters: queryParameters);
   }
 
-  static Future<Response> post(String path, {dynamic data}) async {
-    return await dio.post(path, data: data);
+  static Future<Response> post(String path, {dynamic data, Options? options}) async {
+    return await dio.post(path, data: data, options: options);
   }
 
   static Future<Response> put(String path, {dynamic data}) async {

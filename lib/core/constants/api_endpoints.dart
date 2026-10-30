@@ -1,12 +1,14 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 class ApiEndpoints {
-  // Automatically choose localhost according to platform
+  static const String serverHost = 'https://ecommerce-backened-jsiy.onrender.com';
+
+  // Automatically use live production backend on Render
   static String get baseUrl {
-    if (kIsWeb) return 'http://127.0.0.1:8000/api';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8000/api';
-    return 'http://127.0.0.1:8000/api';
+    if (kDebugMode && kIsWeb) {
+      return 'http://127.0.0.1:8000/api';
+    }
+    return '$serverHost/api';
   }
 
   // Auth endpoints
@@ -42,4 +44,9 @@ class ApiEndpoints {
   static const String notifications = '/common/notifications/';
   static const String faqs = '/common/faqs/';
   static const String contact = '/common/contact/';
+
+  // Virtual Try-On & AI Visualization
+  static const String tryonGenerate = '/virtual-tryon/generate/';
+  static const String tryonJobs = '/virtual-tryon/jobs/';
+  static const String tryonHistory = '/virtual-tryon/history/';
 }

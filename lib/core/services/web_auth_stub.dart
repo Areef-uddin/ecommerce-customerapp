@@ -15,3 +15,7 @@ Future<Map<String, dynamic>?> verifyFirebasePhoneOtp(String code) async {
 Future<Map<String, dynamic>?> triggerRazorpayCheckout(Map<String, dynamic> options) async {
   return null;
 }
+
+Future<String?> pickImageAsBase64() async {
+  return null;
+}

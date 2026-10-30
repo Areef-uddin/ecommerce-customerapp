@@ -49,6 +49,13 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <div id="recaptcha-container"></div>
   <script>
+    // Ensure localhost domain is used so Firebase Auth origin validation passes
+    if (window.location.hostname === '127.0.0.1') {
+      try {
+        window.location.replace(window.location.href.replace('://127.0.0.1:', '://localhost:'));
+      } catch (_) {}
+    }
+
     const firebaseConfig = {
       apiKey: "AIzaSyAT46Y1gGr2IFdbTsoIJ3KolpsA5pHe9S4",
       authDomain: "ecommerce-auth-fcm.firebaseapp.com",
@@ -65,50 +72,13 @@
     }
     ensureFirebase();
 
-    // 1. Google Sign-In with Firebase and Google Identity Services dual-fallback
+    // 1. Real Firebase Google Sign-In popup
     window.signInWithGoogleFirebase = function() {
       return new Promise((resolve, reject) => {
         try {
           ensureFirebase();
 
-          function tryGoogleIdentityFallback(origError) {
-            try {
-              if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-                const client = google.accounts.oauth2.initTokenClient({
-                  client_id: '621377508053-1ej88epn67vc08igp0fib1fnletvrjjp.apps.googleusercontent.com',
-                  scope: 'email profile openid',
-                  callback: (tokenResponse) => {
-                    if (tokenResponse && tokenResponse.access_token) {
-                      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                        headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
-                      })
-                      .then(r => r.json())
-                      .then(u => {
-                        resolve(JSON.stringify({
-                          email: u.email || '',
-                          name: u.name || (u.email ? u.email.split('@')[0] : 'Shopper'),
-                          avatar: u.picture || 'https://lh3.googleusercontent.com/a/default-user',
-                          uid: u.sub || ''
-                        }));
-                      })
-                      .catch(e => reject(e.toString()));
-                    } else {
-                      reject(origError ? (origError.message || origError) : 'Google Sign-In canceled');
-                    }
-                  },
-                  error_callback: (err) => {
-                    reject(err.message || (origError ? origError.message : 'Google Sign-In failed'));
-                  }
-                });
-                client.requestAccessToken({ prompt: 'select_account' });
-                return true;
-              }
-            } catch (_) {}
-            return false;
-          }
-
           if (typeof firebase === 'undefined' || !firebase.auth) {
-            if (tryGoogleIdentityFallback(null)) return;
             reject('Firebase Auth SDK is still loading. Please reload the page.');
             return;
           }
@@ -116,6 +86,8 @@
           const provider = new firebase.auth.GoogleAuthProvider();
           provider.addScope('email');
           provider.addScope('profile');
+          provider.setCustomParameters({ prompt: 'select_account' });
+
           firebase.auth().signInWithPopup(provider)
             .then((res) => {
               const u = res.user;
@@ -127,17 +99,18 @@
               }));
             })
             .catch((err) => {
-              console.warn('Firebase Google Auth error, trying Google Identity Services fallback:', err);
-              if (tryGoogleIdentityFallback(err)) {
+              if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                console.log('Google Sign-In popup dismissed by user.');
+                resolve(null);
                 return;
               }
               let userMsg = err.message || 'Firebase Google Sign-In failed';
               if (err.code === 'auth/operation-not-allowed') {
                 userMsg = 'Please enable Google provider in Firebase Console > Authentication > Sign-in method.';
               } else if (err.code === 'auth/popup-blocked') {
-                userMsg = 'Browser popup blocked. Please allow popups for this site.';
+                userMsg = 'Browser popup blocked. Please allow popups for localhost.';
               } else if (err.code === 'auth/unauthorized-domain') {
-                userMsg = 'Domain localhost is not added in Firebase Console > Authentication > Settings > Authorized domains.';
+                userMsg = 'Domain not authorized in Firebase Console. Please open http://localhost:3000 in your browser.';
               }
               reject(userMsg);
             });
@@ -217,23 +190,40 @@
             return;
           }
           const opts = JSON.parse(optionsJson);
+          let isHandled = false;
+
           opts.handler = function(response) {
+            isHandled = true;
+            console.log('[Razorpay Checkout Success Handler]:', response);
             resolve(JSON.stringify({
               success: true,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature
+              razorpay_payment_id: response.razorpay_payment_id || '',
+              razorpay_order_id: response.razorpay_order_id || opts.order_id || '',
+              razorpay_signature: response.razorpay_signature || ''
             }));
           };
+
           opts.modal = {
             ondismiss: function() {
-              reject('Payment window closed by user');
+              console.log('[Razorpay Modal Dismissed]');
+              if (!isHandled) {
+                isHandled = true;
+                resolve(JSON.stringify({
+                  success: false,
+                  cancelled: true,
+                  message: 'Payment cancelled by user'
+                }));
+              }
             }
           };
+
           const rzp = new Razorpay(opts);
           rzp.on('payment.failed', function(resp) {
-            console.error('Razorpay payment failed:', resp);
-            reject((resp.error && resp.error.description) ? resp.error.description : 'Payment failed');
+            console.error('[Razorpay Payment Failed]:', resp);
+            if (!isHandled) {
+              isHandled = true;
+              reject((resp.error && resp.error.description) ? resp.error.description : 'Payment failed');
+            }
           });
           rzp.open();
         } catch (e) {

@@ -15,8 +15,11 @@ class LoginView extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Obx(
-            () => Column(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Obx(
+                () => Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 20),
@@ -245,6 +248,8 @@ class LoginView extends StatelessWidget {
                   ],
                 ),
               ],
+                ),
+              ),
             ),
           ),
         ),

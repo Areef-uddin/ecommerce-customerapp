@@ -110,7 +110,7 @@ class ProductController extends GetxController {
 
       // Synchronize CartController immediately
       if (Get.isRegistered<CartController>()) {
-        Get.find<CartController>().fetchCart();
+        await Get.find<CartController>().fetchCart();
       }
 
       Get.snackbar(
@@ -175,12 +175,21 @@ class ProductController extends GetxController {
         colorName = product.colors[selectedColorIndex.value].name;
       }
 
+      // Clear existing cart so Buy Now checks out ONLY this product with selected quantity
+      try {
+        await ApiClient.delete(ApiEndpoints.clearCart);
+      } catch (_) {}
+
       await ApiClient.post(ApiEndpoints.cart, data: {
         'product_id': product.id,
         'quantity': quantity.value,
         'size': selectedSize.value,
         'color': colorName,
       });
+
+      if (Get.isRegistered<CartController>()) {
+        await Get.find<CartController>().fetchCart();
+      }
 
       Get.toNamed('/checkout-address');
     } catch (e) {

@@ -160,18 +160,31 @@ class _WishlistViewState extends State<WishlistView> {
 
               // Grid of items
               Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.58,
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemCount: controller.wishlistItems.length,
-                  itemBuilder: (context, idx) {
-                    final item = controller.wishlistItems[idx];
-                    return _buildWishlistCard(item, controller);
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    int crossAxisCount = 2;
+                    if (constraints.maxWidth > 1150) {
+                      crossAxisCount = 5;
+                    } else if (constraints.maxWidth > 850) {
+                      crossAxisCount = 4;
+                    } else if (constraints.maxWidth > 580) {
+                      crossAxisCount = 3;
+                    }
+
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        childAspectRatio: 0.62,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 16,
+                      ),
+                      itemCount: controller.wishlistItems.length,
+                      itemBuilder: (context, idx) {
+                        final item = controller.wishlistItems[idx];
+                        return _buildWishlistCard(item, controller);
+                      },
+                    );
                   },
                 ),
               ),

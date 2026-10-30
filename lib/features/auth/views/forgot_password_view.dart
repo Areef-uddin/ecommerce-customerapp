@@ -21,7 +21,9 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<AuthController>();
+    final controller = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : Get.put(AuthController());
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -30,7 +32,13 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: AppColors.textPrimary),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Get.back();
+            } else {
+              Get.offAllNamed('/login');
+            }
+          },
         ),
       ),
       body: SafeArea(
@@ -172,7 +180,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
               // Back to Login link
               Center(
                 child: TextButton(
-                  onPressed: () => Get.back(),
+                  onPressed: () => Get.offAllNamed('/login'),
                   child: const Text(
                     'Remember password? Back to Login',
                     style: TextStyle(

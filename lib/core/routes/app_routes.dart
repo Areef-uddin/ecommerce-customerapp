@@ -20,4 +20,5 @@ abstract class AppRoutes {
   static const profile = '/profile';
   static const helpSupport = '/help-support';
   static const notifications = '/notifications';
+  static const virtualTryOn = '/virtual-tryon';
 }

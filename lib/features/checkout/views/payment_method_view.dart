@@ -1,342 +1,638 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import '../../../core/constants/app_colors.dart';
+import '../../../core/routes/app_routes.dart';
 import '../controllers/checkout_controller.dart';
 import '../../cart/controllers/cart_controller.dart';
 
-class PaymentMethodView extends StatelessWidget {
+class PaymentMethodView extends StatefulWidget {
   const PaymentMethodView({super.key});
 
   @override
+  State<PaymentMethodView> createState() => _PaymentMethodViewState();
+}
+
+class _PaymentMethodViewState extends State<PaymentMethodView> {
+  final checkoutController = Get.isRegistered<CheckoutController>()
+      ? Get.find<CheckoutController>()
+      : Get.put(CheckoutController());
+  final cartController = Get.isRegistered<CartController>()
+      ? Get.find<CartController>()
+      : Get.put(CartController());
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      cartController.fetchCart();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final checkoutController = Get.find<CheckoutController>();
-    final cartController = Get.find<CartController>();
-
-    final paymentOptions = [
-      {
-        'id': 'PhonePe',
-        'title': 'PhonePe (UPI)',
-        'subtitle': 'Instant UPI payment via PhonePe app / QR code',
-        'badge': 'MOST POPULAR',
-        'icon': Icons.qr_code_2_rounded,
-        'iconColor': const Color(0xFF5F259F),
-        'iconBg': const Color(0xFFF3E8FF),
-        'btnColor': const Color(0xFF5F259F),
-      },
-      {
-        'id': 'Paytm',
-        'title': 'Paytm (UPI & Wallet)',
-        'subtitle': 'Instant payment via Paytm UPI, Wallet or Postpaid',
-        'badge': 'FAST & EASY',
-        'icon': Icons.account_balance_wallet_rounded,
-        'iconColor': const Color(0xFF002970),
-        'iconBg': const Color(0xFFE0F2FE),
-        'btnColor': const Color(0xFF002970),
-      },
-      {
-        'id': 'Razorpay',
-        'title': 'Razorpay Secure Gateway',
-        'subtitle': 'Credit/Debit Cards, Net Banking, GPay & all major banks',
-        'badge': 'ALL CARDS & BANKS',
-        'icon': Icons.bolt_rounded,
-        'iconColor': const Color(0xFF00BAF2),
-        'iconBg': const Color(0xFF0C2340),
-        'btnColor': const Color(0xFF0C2340),
-      },
-      {
-        'id': 'Cash on Delivery',
-        'title': 'Cash on Delivery (COD)',
-        'subtitle': 'Pay with cash or UPI at your doorstep upon delivery',
-        'badge': 'PAY AT DOORSTEP',
-        'icon': Icons.local_shipping_outlined,
-        'iconColor': const Color(0xFF10B981),
-        'iconBg': const Color(0xFFECFDF5),
-        'btnColor': AppColors.primary,
-      },
-    ];
-
-    final total = cartController.cartSummary.value?.finalTotal.toInt() ?? 2998;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Get.back();
+            } else {
+              Get.offNamed(AppRoutes.checkoutAddress);
+            }
+          },
         ),
-        title: const Text(
+        title: Text(
           'Select Payment Method',
-          style: TextStyle(
+          style: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w800,
             fontSize: 18,
-            color: Color(0xFF0F172A),
+            color: const Color(0xFF0F172A),
           ),
         ),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Security Banner
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFBFDBFE)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.shield_outlined, color: Color(0xFF2563EB), size: 20),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              '100% Safe & RBI compliant 256-bit encrypted payments.',
-                              style: TextStyle(fontSize: 12, color: Color(0xFF1E40AF), fontWeight: FontWeight.w600),
-                            ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Obx(() {
+            final summaryTotal = cartController.cartSummary.value?.finalTotal;
+            final calculatedTotal = cartController.cartItems.fold<double>(
+              0.0,
+              (sum, item) => sum + (item.product.price * item.quantity),
+            );
+            final cartTotal =
+                summaryTotal ?? (calculatedTotal > 0 ? calculatedTotal : 0.0);
+            final formattedTotal = '₹${cartTotal.toInt()}';
+            final selectedMethod =
+                checkoutController.selectedPaymentMethod.value;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: ListView(
+                      children: [
+                        // 1. Security Banner (Exact Image 3 Screen 2)
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    const Text(
-                      'CHOOSE PAYMENT OPTION',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.1,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Payment Options List
-                    ...paymentOptions.map((opt) {
-                      return Obx(() {
-                        final isSel = checkoutController.selectedPaymentMethod.value == opt['id'];
-
-                        return GestureDetector(
-                          onTap: () => checkoutController.selectedPaymentMethod.value = opt['id'] as String,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(15),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isSel ? (opt['btnColor'] as Color) : const Color(0xFFE2E8F0),
-                                width: isSel ? 2 : 1,
-                              ),
-                              boxShadow: isSel
-                                  ? [
-                                      BoxShadow(
-                                        color: (opt['btnColor'] as Color).withOpacity(0.12),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ]
-                                  : [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.02),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Icon badge
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: opt['iconBg'] as Color,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    opt['icon'] as IconData,
-                                    color: opt['iconColor'] as Color,
-                                    size: 24,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            opt['title'] as String,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 15,
-                                              color: Color(0xFF0F172A),
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                            decoration: BoxDecoration(
-                                              color: isSel ? (opt['btnColor'] as Color) : const Color(0xFFF1F5F9),
-                                              borderRadius: BorderRadius.circular(6),
-                                            ),
-                                            child: Text(
-                                              opt['badge'] as String,
-                                              style: TextStyle(
-                                                color: isSel ? Colors.white : const Color(0xFF64748B),
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.w800,
-                                                letterSpacing: 0.5,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 5),
-                                      Text(
-                                        opt['subtitle'] as String,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF64748B),
-                                          height: 1.3,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                // Radio check indicator
-                                Container(
-                                  width: 22,
-                                  height: 22,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: isSel ? (opt['btnColor'] as Color) : const Color(0xFFCBD5E1),
-                                      width: isSel ? 6.5 : 2,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      });
-                    }),
-
-                    const SizedBox(height: 12),
-
-                    // Amount breakdown preview
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Row(
                             children: [
-                              const Text('Total Amount Payable', style: TextStyle(fontSize: 14, color: Color(0xFF475569))),
-                              Text('₹$total', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFDBEAFE),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.verified_user_outlined,
+                                  color: Color(0xFF2563EB),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '100% Safe & Secure Payments',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF1E3A8A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Your payments are protected with 256-bit encryption.',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12,
+                                        color: const Color(0xFF3B82F6),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
-                        ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Section Title: CHOOSE PAYMENT OPTION
+                        Text(
+                          'CHOOSE PAYMENT OPTION',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Payment Option 1: Online Payment (with logos row)
+                        _buildOnlinePaymentCard(
+                          isSelected: selectedMethod != 'Cash on Delivery',
+                          onTap: () =>
+                              checkoutController.selectedPaymentMethod.value =
+                                  'Razorpay',
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Payment Option 2: Cash on Delivery
+                        _buildCodPaymentCard(
+                          isSelected: selectedMethod == 'Cash on Delivery',
+                          onTap: () =>
+                              checkoutController.selectedPaymentMethod.value =
+                                  'Cash on Delivery',
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Bottom Summary & Dark Navy Button (Exact Image 3 Screen 2)
+                  Container(
+                    padding: const EdgeInsets.only(top: 14, bottom: 16),
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: Color(0xFFF1F5F9), width: 1.5),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
+                    child: Column(
+                      children: [
+                        // Total Amount Payable Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total Amount Payable',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                color: const Color(0xFF64748B),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              formattedTotal,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
 
-            // Bottom CTA Button
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x0F000000),
-                    blurRadius: 10,
-                    offset: Offset(0, -4),
+                        if (checkoutController
+                                .pendingPaymentVerification
+                                .value !=
+                            null) ...[
+                          Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF7ED),
+                              border: Border.all(
+                                color: const Color(0xFFFED7AA),
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              checkoutController
+                                      .paymentVerificationError
+                                      .value
+                                      .isEmpty
+                                  ? 'Payment response received. Confirming your order… Please do not pay again.'
+                                  : '${checkoutController.paymentVerificationError.value}\nRetry verification below; do not start another payment.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                color: const Color(0xFF9A3412),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: checkoutController.isPlacingOrder.value
+                                  ? null
+                                  : checkoutController.retryPaymentVerification,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0F172A),
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: const Color(
+                                  0xFF94A3B8,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: checkoutController.isPlacingOrder.value
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Retry Payment Verification'),
+                            ),
+                          ),
+                        ] else
+                          // Dark Navy Button: [ 🔒  Pay ₹1,000 Securely  → ]
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: checkoutController.isPlacingOrder.value
+                                  ? null
+                                  : () => checkoutController.placeOrder(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0F172A),
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: const Color(
+                                  0xFF94A3B8,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: checkoutController.isPlacingOrder.value
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.lock_rounded,
+                                          size: 16,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Pay $formattedTotal Securely',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 15,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Icon(
+                                          Icons.arrow_forward_rounded,
+                                          size: 18,
+                                          color: Colors.white,
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              child: Obx(() {
-                final isPlacing = checkoutController.isPlacingOrder.value;
-                final sel = checkoutController.selectedPaymentMethod.value;
+            );
+          }),
+        ),
+      ),
+    );
+  }
 
-                Color btnBg = const Color(0xFF0C2340);
-                String btnText = 'Pay ₹$total with Razorpay';
-                IconData btnIcon = Icons.bolt_rounded;
-
-                if (sel == 'PhonePe') {
-                  btnBg = const Color(0xFF5F259F);
-                  btnText = 'Pay ₹$total with PhonePe';
-                  btnIcon = Icons.qr_code_2_rounded;
-                } else if (sel == 'Paytm') {
-                  btnBg = const Color(0xFF002970);
-                  btnText = 'Pay ₹$total with Paytm';
-                  btnIcon = Icons.account_balance_wallet_rounded;
-                } else if (sel == 'Cash on Delivery') {
-                  btnBg = AppColors.primary;
-                  btnText = 'Place Order (Cash on Delivery)';
-                  btnIcon = Icons.check_circle_outline;
-                }
-
-                return SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: isPlacing ? null : () => checkoutController.placeOrder(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: btnBg,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+  // Card 1: Online Payment Card (Exact Image 3 Screen 2)
+  Widget _buildOnlinePaymentCard({
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFFE11D48)
+                : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.5 : 1,
+          ),
+          color: isSelected ? const Color(0xFFFFF5F5) : Colors.white,
+        ),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Radio Button
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFE11D48)
+                          : const Color(0xFF94A3B8),
+                      width: isSelected ? 2 : 1.5,
                     ),
-                    child: isPlacing
-                        ? const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              ),
-                              SizedBox(width: 12),
-                              Text('Opening Payment Gateway...', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                            ],
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(btnIcon, color: Colors.white, size: 22),
-                              const SizedBox(width: 8),
-                              Text(
-                                btnText,
-                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-                              ),
-                            ],
-                          ),
+                    color: Colors.white,
                   ),
-                );
-              }),
+                  child: isSelected
+                      ? Center(
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFE11D48),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 12),
+
+                // Lightning Icon Container
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFE4E6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.flash_on_rounded,
+                    color: Color(0xFFE11D48),
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Title & Subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Online Payment',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Pay using UPI, Cards,\nNet Banking & Wallets',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: const Color(0xFF64748B),
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(0xFF64748B),
+                  size: 22,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Logos row: UPI, VISA, Mastercard, RuPay, Wallet
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF1F5F9)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildBrandPill('UPI', const Color(0xFF00796B), isUpi: true),
+                  _buildBrandPill(
+                    'VISA',
+                    const Color(0xFF1A1F71),
+                    isVisa: true,
+                  ),
+                  _buildMastercardPill(),
+                  _buildBrandPill('RuPay', const Color(0xFFF37021)),
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 22,
+                    color: Color(0xFF334155),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Card 2: Cash on Delivery Card (Exact Image 3 Screen 2)
+  Widget _buildCodPaymentCard({
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFFE11D48)
+                : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.5 : 1,
+          ),
+          color: isSelected ? const Color(0xFFFFF5F5) : Colors.white,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Radio Button
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? const Color(0xFFE11D48)
+                      : const Color(0xFF94A3B8),
+                  width: isSelected ? 2 : 1.5,
+                ),
+                color: Colors.white,
+              ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE11D48),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+
+            // Truck Icon Container
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.local_shipping_outlined,
+                color: Color(0xFF475569),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Title & Subtitle
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Cash on Delivery',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Pay with cash at your doorstep upon delivery',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF94A3B8),
+              size: 22,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrandPill(
+    String name,
+    Color color, {
+    bool isUpi = false,
+    bool isVisa = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Text(
+        name,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+          fontStyle: isVisa ? FontStyle.italic : FontStyle.normal,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMastercardPill() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: SizedBox(
+        width: 32,
+        height: 16,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 2,
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEB001B),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              right: 2,
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF79E1B).withOpacity(0.9),
+                  shape: BoxShape.circle,
+                ),
+              ),
             ),
           ],
         ),

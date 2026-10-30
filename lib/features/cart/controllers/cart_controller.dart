@@ -1,7 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/storage_service.dart';
 import '../models/cart_model.dart';
 
 class CartController extends GetxController {
@@ -11,10 +14,28 @@ class CartController extends GetxController {
   final couponController = TextEditingController(text: 'STYLE300');
   final isApplyingCoupon = false.obs;
 
+  int get cartCount => cartItems.length;
+  int get totalQuantity =>
+      cartItems.fold(0, (sum, item) => sum + item.quantity);
+  double get finalTotal {
+    if (cartSummary.value != null && cartSummary.value!.finalTotal > 0) {
+      return cartSummary.value!.finalTotal;
+    }
+    return cartItems.fold<double>(
+      0.0,
+      (sum, item) => sum + (item.product.price * item.quantity),
+    );
+  }
+
   @override
   void onInit() {
     super.onInit();
-    fetchCart();
+    final token = StorageService.getAccessToken();
+    if (token != null && token.isNotEmpty) {
+      fetchCart();
+    } else {
+      isLoading.value = false;
+    }
   }
 
   @override
@@ -24,20 +45,33 @@ class CartController extends GetxController {
   }
 
   Future<void> fetchCart() async {
+    final token = StorageService.getAccessToken();
+    if (token == null || token.isEmpty) {
+      cartItems.clear();
+      cartSummary.value = null;
+      isLoading.value = false;
+      return;
+    }
     try {
       isLoading.value = true;
       final res = await ApiClient.get(ApiEndpoints.cart);
-      if (res.data is List) {
-        cartItems.assignAll(
-          (res.data as List).map((i) => CartItemModel.fromJson(i)).toList(),
-        );
-      }
+      // The server is the source of truth: an empty response must clear any
+      // stale in-memory items left from a previous session or checkout.
+      cartItems.assignAll(
+        res.data is List
+            ? (res.data as List).map((i) => CartItemModel.fromJson(i)).toList()
+            : const <CartItemModel>[],
+      );
 
       final sumRes = await ApiClient.get(
         '${ApiEndpoints.cartSummary}?coupon=${couponController.text.trim()}',
       );
       cartSummary.value = CartSummaryModel.fromJson(sumRes.data);
     } catch (e) {
+      if (e is DioException && e.response?.statusCode == 401) {
+        cartItems.clear();
+        cartSummary.value = null;
+      }
       debugPrint('Error fetching cart: $e');
     } finally {
       isLoading.value = false;
@@ -54,9 +88,10 @@ class CartController extends GetxController {
     cartItems.refresh();
 
     try {
-      await ApiClient.patch('${ApiEndpoints.cart}${item.id}/', data: {
-        'quantity': newQty,
-      });
+      await ApiClient.patch(
+        '${ApiEndpoints.cart}${item.id}/',
+        data: {'quantity': newQty},
+      );
       fetchCart();
     } catch (e) {
       // rollback
@@ -79,7 +114,10 @@ class CartController extends GetxController {
 
     try {
       isApplyingCoupon.value = true;
-      final res = await ApiClient.post(ApiEndpoints.applyCoupon, data: {'code': code});
+      final res = await ApiClient.post(
+        ApiEndpoints.applyCoupon,
+        data: {'code': code},
+      );
       Get.snackbar('Success', res.data['message'] ?? 'Coupon applied!');
       fetchCart();
     } catch (e) {

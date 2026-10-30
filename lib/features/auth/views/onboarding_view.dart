@@ -42,7 +42,10 @@ class _OnboardingViewState extends State<OnboardingView> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Column(
           children: [
             // Top Image Carousel
             Expanded(
@@ -152,9 +155,11 @@ class _OnboardingViewState extends State<OnboardingView> {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

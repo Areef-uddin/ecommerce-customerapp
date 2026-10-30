@@ -5,24 +5,36 @@ import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/api_client.dart';
 import '../../category/models/category_model.dart';
 import '../../product/models/product_model.dart';
+import '../../cart/controllers/cart_controller.dart';
 
 class HomeController extends GetxController {
   final currentNavIndex = 0.obs;
+  final currentBannerIndex = 0.obs;
+  final selectedChip = 'Trending'.obs;
   final searchController = TextEditingController();
 
   final isLoading = true.obs;
   final banners = <Map<String, dynamic>>[].obs;
   final categories = <CategoryModel>[].obs;
   final trendingProducts = <ProductModel>[].obs;
-  final cartItemCount = 2.obs;
+  final allProducts = <ProductModel>[].obs;
+  int get cartItemCount => Get.isRegistered<CartController>() ? Get.find<CartController>().totalQuantity : 0;
   Timer? _autoRefreshTimer;
+
+  final chips = [
+    'Trending',
+    'New Arrivals',
+    'Best Sellers',
+    'Offers',
+    'Premium',
+  ];
 
   @override
   void onInit() {
     super.onInit();
     fetchHomeData();
-    // Auto-refresh every 8 seconds so newly created admin products appear dynamically
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+    // Auto-refresh every 12 seconds so newly created admin products appear dynamically
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 12), (_) {
       fetchHomeData(silent: true);
     });
   }
@@ -52,12 +64,12 @@ class HomeController extends GetxController {
         );
       }
 
-      // 3. Fetch Trending Products
-      final prodRes = await ApiClient.get('${ApiEndpoints.products}?trending=true');
+      // 3. Fetch Products
+      final prodRes = await ApiClient.get(ApiEndpoints.products);
       if (prodRes.data is List) {
-        trendingProducts.assignAll(
-          (prodRes.data as List).map((p) => ProductModel.fromJson(p)).toList(),
-        );
+        final list = (prodRes.data as List).map((p) => ProductModel.fromJson(p)).toList();
+        allProducts.assignAll(list);
+        applyChipFilter(selectedChip.value);
       }
     } catch (e) {
       debugPrint('Error fetching home data: $e');
@@ -66,9 +78,33 @@ class HomeController extends GetxController {
     }
   }
 
+  void selectChip(String chip) {
+    selectedChip.value = chip;
+    applyChipFilter(chip);
+  }
+
+  void applyChipFilter(String chip) {
+    if (chip == 'Trending') {
+      final filtered = allProducts.where((p) => p.isTrending).toList();
+      trendingProducts.assignAll(filtered.isNotEmpty ? filtered : allProducts);
+    } else if (chip == 'New Arrivals') {
+      final filtered = allProducts.where((p) => p.isNewArrival).toList();
+      trendingProducts.assignAll(filtered.isNotEmpty ? filtered : allProducts);
+    } else if (chip == 'Offers') {
+      final filtered = allProducts.where((p) => p.originalPrice != null && p.originalPrice! > p.price).toList();
+      trendingProducts.assignAll(filtered.isNotEmpty ? filtered : allProducts);
+    } else if (chip == 'Best Sellers' || chip == 'Premium') {
+      final sorted = List<ProductModel>.from(allProducts)..sort((a, b) => b.rating.compareTo(a.rating));
+      trendingProducts.assignAll(sorted);
+    } else {
+      trendingProducts.assignAll(allProducts);
+    }
+  }
+
   Future<void> toggleWishlist(ProductModel product) async {
     product.isWishlisted = !product.isWishlisted;
     trendingProducts.refresh();
+    allProducts.refresh();
 
     try {
       await ApiClient.post(ApiEndpoints.wishlistToggle, data: {
@@ -77,6 +113,7 @@ class HomeController extends GetxController {
     } catch (e) {
       product.isWishlisted = !product.isWishlisted;
       trendingProducts.refresh();
+      allProducts.refresh();
     }
   }
 }
