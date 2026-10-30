@@ -32,6 +32,13 @@ class MyOrdersView extends StatelessWidget {
           'My Orders',
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh orders and return updates',
+            onPressed: () => controller.fetchOrders(),
+            icon: const Icon(Icons.refresh, color: AppColors.primary),
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -161,7 +168,7 @@ class MyOrdersView extends StatelessWidget {
 
   Widget _buildOrderCard(OrderModel order) {
     final firstItem = order.items.isNotEmpty ? order.items.first : null;
-    final latestReturn = order.returns.isEmpty ? null : order.returns.last;
+    final latestReturn = order.returns.isEmpty ? null : order.returns.first;
 
     Color badgeColor = Colors.orange;
     if ([
@@ -178,6 +185,11 @@ class MyOrdersView extends StatelessWidget {
     if (order.orderStatus == 'Cancelled') {
       badgeColor = Colors.red;
     }
+    final orderMark = order.orderStatus == 'Delivered'
+        ? Icons.check_circle
+        : order.orderStatus == 'Cancelled'
+        ? Icons.cancel
+        : Icons.schedule;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -274,13 +286,14 @@ class MyOrdersView extends StatelessWidget {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: badgeColor,
-                              shape: BoxShape.circle,
-                            ),
+                          Icon(
+                            latestReturn?.status == 'Refund Processed'
+                                ? Icons.verified
+                                : orderMark,
+                            color: latestReturn?.status == 'Refund Processed'
+                                ? const Color(0xFF15803D)
+                                : badgeColor,
+                            size: 16,
                           ),
                           const SizedBox(width: 6),
                           Expanded(
@@ -299,6 +312,10 @@ class MyOrdersView extends StatelessWidget {
                           ),
                         ],
                       ),
+                      if (latestReturn != null) ...[
+                        const SizedBox(height: 8),
+                        _buildReturnUpdate(latestReturn),
+                      ],
                     ],
                   ),
                 ),
@@ -354,6 +371,71 @@ class MyOrdersView extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReturnUpdate(ReturnRequestModel request) {
+    final status = request.status;
+    final isComplete = status == 'Refund Processed';
+    final isRejected = status == 'Rejected';
+    final color = isComplete
+        ? const Color(0xFF15803D)
+        : isRejected
+        ? const Color(0xFFB91C1C)
+        : const Color(0xFFB45309);
+    final background = isComplete
+        ? const Color(0xFFF0FDF4)
+        : isRejected
+        ? const Color(0xFFFEF2F2)
+        : const Color(0xFFFFFBEB);
+    final icon = isComplete
+        ? Icons.check_circle
+        : isRejected
+        ? Icons.cancel
+        : Icons.sync;
+    final latestNote = request.timeline.isEmpty
+        ? 'We will show each return and refund update here.'
+        : request.timeline.last.note;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 17, color: color),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Return ${request.status} • ₹${request.refundAmount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  latestNote,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isComplete) Icon(Icons.verified, size: 16, color: color),
         ],
       ),
     );

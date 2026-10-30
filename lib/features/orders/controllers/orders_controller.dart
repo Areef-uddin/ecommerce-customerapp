@@ -28,6 +28,7 @@ class OrdersController extends GetxController {
   final isSubmittingReturn = false.obs;
   final selectedReturnItemId = RxnInt();
   final isBuyingAgain = false.obs;
+  bool _isFetchingOrders = false;
 
   @override
   void onInit() {
@@ -57,6 +58,8 @@ class OrdersController extends GetxController {
   }
 
   Future<void> fetchOrders({bool silent = false}) async {
+    if (_isFetchingOrders) return;
+    _isFetchingOrders = true;
     try {
       if (!silent) {
         isLoading.value = true;
@@ -69,8 +72,38 @@ class OrdersController extends GetxController {
 
       final res = await ApiClient.get(url);
       if (res.data is List) {
+        // Fetch return records independently too, so cards still get status
+        // updates while older API instances are rolling out the nested field.
+        List<dynamic> returnRecords = const [];
+        try {
+          final returnsResponse = await ApiClient.get(ApiEndpoints.returns);
+          if (returnsResponse.data is List) {
+            returnRecords = returnsResponse.data as List<dynamic>;
+          }
+        } catch (error) {
+          debugPrint('Could not refresh order return updates: $error');
+        }
+        final returnsByOrder = <int, List<Map<String, dynamic>>>{};
+        for (final record in returnRecords.whereType<Map>()) {
+          final orderId = int.tryParse(record['order'].toString());
+          if (orderId == null) continue;
+          returnsByOrder
+              .putIfAbsent(orderId, () => [])
+              .add(Map<String, dynamic>.from(record));
+        }
         orders.assignAll(
-          (res.data as List).map((o) => OrderModel.fromJson(o)).toList(),
+          (res.data as List).whereType<Map>().map((rawOrder) {
+            final json = Map<String, dynamic>.from(rawOrder);
+            final id = int.tryParse(json['id'].toString());
+            final directReturns = id == null
+                ? const <Map<String, dynamic>>[]
+                : returnsByOrder[id] ?? const <Map<String, dynamic>>[];
+            final nestedReturns = (json['returns'] as List?) ?? const [];
+            json['returns'] = directReturns.isNotEmpty
+                ? directReturns
+                : nestedReturns;
+            return OrderModel.fromJson(json);
+          }).toList(),
         );
       }
     } catch (e) {
@@ -81,6 +114,7 @@ class OrdersController extends GetxController {
       }
     } finally {
       if (!silent) isLoading.value = false;
+      _isFetchingOrders = false;
     }
   }
 
