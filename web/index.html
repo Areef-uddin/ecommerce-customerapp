@@ -108,9 +108,9 @@
               if (err.code === 'auth/operation-not-allowed') {
                 userMsg = 'Please enable Google provider in Firebase Console > Authentication > Sign-in method.';
               } else if (err.code === 'auth/popup-blocked') {
-                userMsg = 'Browser popup blocked. Please allow popups for localhost.';
+                userMsg = 'Browser popup blocked. Please allow popups for this site.';
               } else if (err.code === 'auth/unauthorized-domain') {
-                userMsg = 'Domain not authorized in Firebase Console. Please open http://localhost:3000 in your browser.';
+                userMsg = 'Domain (' + window.location.hostname + ') is not authorized in Firebase Console. Please add "' + window.location.hostname + '" or "vercel.app" to Firebase Console > Authentication > Settings > Authorized domains.';
               }
               reject(userMsg);
             });
