@@ -52,6 +52,14 @@ class AuthController extends GetxController {
 
   String _extractErrorMessage(dynamic error, String fallback) {
     if (error is DioException) {
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.sendTimeout) {
+        return 'Server took too long to respond. The cloud server might be waking up, please try again in a few seconds.';
+      }
+      if (error.type == DioExceptionType.connectionError) {
+        return 'Unable to connect to server. Please check your internet or server status.';
+      }
       final data = error.response?.data;
       if (data is Map) {
         if (data.containsKey('detail')) {
