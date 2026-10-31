@@ -30,6 +30,7 @@ class MainNavigationView extends StatelessWidget {
       body: Obx(() => pages[controller.currentNavIndex.value]),
       bottomNavigationBar: Obx(
         () => Container(
+          height: 68,
           decoration: BoxDecoration(
             color: Colors.white,
             boxShadow: [
@@ -43,7 +44,8 @@ class MainNavigationView extends StatelessWidget {
           ),
           child: SafeArea(
             top: false,
-            child: Center(
+            child: Align(
+              alignment: Alignment.center,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 640),
                 child: SizedBox(
