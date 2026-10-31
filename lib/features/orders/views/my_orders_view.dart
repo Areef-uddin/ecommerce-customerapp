@@ -13,7 +13,7 @@ class MyOrdersView extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(OrdersController());
 
-    final tabs = ['All', 'Processing', 'Shipped', 'Delivered', 'Returns'];
+    final tabs = ['All', 'Processing', 'Shipped', 'Delivered', 'Returns', 'Cancelled'];
 
     return Scaffold(
       backgroundColor: Colors.white,

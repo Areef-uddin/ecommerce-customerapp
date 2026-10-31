@@ -88,6 +88,8 @@ class OrdersController extends GetxController {
       case 'returns':
       case 'return / refund':
         return allOrders.where((o) => o.returns.isNotEmpty).length;
+      case 'cancelled':
+        return allOrders.where((o) => o.orderStatus.toLowerCase() == 'cancelled').length;
       case 'all':
       default:
         return allOrders.length;
@@ -128,6 +130,8 @@ class OrdersController extends GetxController {
           .toList();
     } else if (filter == 'returns' || filter == 'return / refund') {
       filtered = allOrders.where((o) => o.returns.isNotEmpty).toList();
+    } else if (filter == 'cancelled') {
+      filtered = allOrders.where((o) => o.orderStatus.toLowerCase() == 'cancelled').toList();
     } else {
       filtered = List<OrderModel>.from(allOrders);
     }

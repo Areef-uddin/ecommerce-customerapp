@@ -35,6 +35,7 @@ class ApiEndpoints {
   static const String returns = '/orders/returns/';
   static const String razorpayCreateOrder = '/orders/orders/create_razorpay_order/';
   static const String razorpayVerifyPayment = '/orders/orders/verify_razorpay_payment/';
+  static const String razorpayCancelPayment = '/orders/orders/record_cancelled_payment/';
 
   // Common
   static const String banners = '/common/banners/';

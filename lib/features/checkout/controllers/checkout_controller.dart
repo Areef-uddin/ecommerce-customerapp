@@ -1,3 +1,4 @@
+import '../../../core/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/dio.dart' as dio;
@@ -252,7 +253,10 @@ class CheckoutController extends GetxController {
       if (Get.isRegistered<CartController>()) {
         await Get.find<CartController>().fetchCart();
       }
-      Get.offNamed('/order-placed');
+      if (Get.isRegistered<OrdersController>()) {
+        Get.find<OrdersController>().fetchOrders();
+      }
+      Get.offNamed(AppRoutes.orderPlaced, arguments: {'cancelled': false, 'order': placedOrder.value});
     } catch (e) {
       debugPrint('COD order creation error: $e');
       var message = 'Could not complete the order. Please retry.';
@@ -349,12 +353,7 @@ class CheckoutController extends GetxController {
       final paymentResult = await triggerRazorpayCheckout(options);
 
       if (paymentResult != null && paymentResult['cancelled'] == true) {
-        Get.snackbar(
-          'Payment Cancelled',
-          'Payment transaction was cancelled.',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
-        );
+        await handlePaymentCancelled(method);
         return;
       }
 
@@ -377,6 +376,11 @@ class CheckoutController extends GetxController {
       );
     } catch (e) {
       debugPrint('Razorpay checkout notice: $e');
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('cancel') || errStr.contains('dismiss')) {
+        await handlePaymentCancelled(method);
+        return;
+      }
       Get.snackbar(
         'Payment Notice',
         e.toString().replaceAll('Exception: ', ''),
@@ -412,7 +416,10 @@ class CheckoutController extends GetxController {
       if (Get.isRegistered<CartController>()) {
         await Get.find<CartController>().fetchCart();
       }
-      Get.offNamed('/order-placed');
+      if (Get.isRegistered<OrdersController>()) {
+        Get.find<OrdersController>().fetchOrders();
+      }
+      Get.offNamed(AppRoutes.orderPlaced, arguments: {'cancelled': false, 'order': placedOrder.value});
     } catch (e) {
       debugPrint('Razorpay payment verification error: $e');
       var message =
@@ -427,6 +434,39 @@ class CheckoutController extends GetxController {
       }
       paymentVerificationError.value = message;
       Get.snackbar('Payment Failed', message);
+    } finally {
+      isPlacingOrder.value = false;
+    }
+  }
+
+  Future<void> handlePaymentCancelled(String method) async {
+    try {
+      isPlacingOrder.value = true;
+      final res = await ApiClient.post(
+        ApiEndpoints.razorpayCancelPayment,
+        data: {
+          'address_id': selectedAddressId.value,
+          'payment_method': method,
+          if (_couponCode != null) 'coupon_code': _couponCode,
+        },
+      );
+      final cancelledOrder = OrderModel.fromJson(res.data);
+      placedOrder.value = cancelledOrder;
+
+      if (Get.isRegistered<OrdersController>()) {
+        Get.find<OrdersController>().fetchOrders();
+      }
+
+      Get.offNamed(
+        AppRoutes.orderPlaced,
+        arguments: {'cancelled': true, 'order': cancelledOrder},
+      );
+    } catch (e) {
+      debugPrint('Cancel record note: $e');
+      Get.offNamed(
+        AppRoutes.orderPlaced,
+        arguments: {'cancelled': true, 'order': placedOrder.value},
+      );
     } finally {
       isPlacingOrder.value = false;
     }
