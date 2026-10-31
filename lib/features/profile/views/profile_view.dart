@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../referral/widgets/referral_profile_card.dart';
 import '../controllers/profile_controller.dart';
 import '../widgets/user_avatar.dart';
 
@@ -24,6 +25,7 @@ class ProfileView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
+      
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -543,7 +545,11 @@ class ProfileView extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // 5. Logout Card
+                  // 5. Premium Referral & Earn Section
+                  const ReferralProfileCard(),
+                  const SizedBox(height: 20),
+
+                  // 6. Logout Card
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,

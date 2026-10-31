@@ -171,6 +171,16 @@ class LoginView extends StatelessWidget {
                       ),
                     ),
                   ),
+                ] else ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller.referralCodeController,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.card_giftcard_outlined, color: AppColors.textMuted),
+                      hintText: 'Referral Code (Optional)',
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 24),
 

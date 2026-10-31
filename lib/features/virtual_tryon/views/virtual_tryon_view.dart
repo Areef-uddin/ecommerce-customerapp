@@ -20,6 +20,34 @@ class VirtualTryOnView extends StatefulWidget {
 class _VirtualTryOnViewState extends State<VirtualTryOnView> {
   final controller = Get.put(TryOnController());
 
+  Widget _buildSmartImage(String url, {dynamic directBytes, required Color fallbackColor}) {
+    if (directBytes != null && directBytes is List<int> && directBytes.isNotEmpty) {
+      return Image.memory(directBytes as dynamic, fit: BoxFit.cover);
+    }
+    if (url.startsWith('data:image/')) {
+      try {
+        final commaIdx = url.indexOf(',');
+        final base64Str = commaIdx != -1 ? url.substring(commaIdx + 1) : url;
+        final bytes = base64Decode(base64Str);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(color: fallbackColor),
+        );
+      } catch (_) {
+        return Container(color: fallbackColor);
+      }
+    }
+    if (url.isNotEmpty && url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(color: fallbackColor),
+      );
+    }
+    return Container(color: fallbackColor);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -562,10 +590,10 @@ class _VirtualTryOnViewState extends State<VirtualTryOnView> {
                     children: [
                       // Layer 1: BEFORE Image (Full width background)
                       Positioned.fill(
-                        child: Image.network(
+                        child: _buildSmartImage(
                           beforeUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade300),
+                          directBytes: controller.userImageBytes.value,
+                          fallbackColor: Colors.grey.shade200,
                         ),
                       ),
 
@@ -575,10 +603,9 @@ class _VirtualTryOnViewState extends State<VirtualTryOnView> {
                           final split = controller.comparisonPosition.value.clamp(0.0, 1.0);
                           return ClipRect(
                             clipper: _HorizontalSplitClipper(split),
-                            child: Image.network(
+                            child: _buildSmartImage(
                               afterUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(color: Colors.pink.shade100),
+                              fallbackColor: const Color(0xFFFDE8E8),
                             ),
                           );
                         }),

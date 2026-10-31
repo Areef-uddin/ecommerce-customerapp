@@ -13,6 +13,7 @@ class AuthController extends GetxController {
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final nameController = TextEditingController();
+  final referralCodeController = TextEditingController();
 
   // OTP inputs
   final otpDigitControllers = List.generate(6, (_) => TextEditingController());
@@ -26,12 +27,23 @@ class AuthController extends GetxController {
   Timer? _timer;
 
   @override
+  void onInit() {
+    super.onInit();
+    final ref = Get.parameters['ref'];
+    if (ref != null && ref.isNotEmpty) {
+      referralCodeController.text = ref.trim().toUpperCase();
+      isLoginTab.value = false;
+    }
+  }
+
+  @override
   void onClose() {
     _timer?.cancel();
     emailController.dispose();
     phoneController.dispose();
     passwordController.dispose();
     nameController.dispose();
+    referralCodeController.dispose();
     for (var c in otpDigitControllers) {
       c.dispose();
     }
@@ -137,11 +149,13 @@ class AuthController extends GetxController {
 
     try {
       isLoading.value = true;
+      final refCode = referralCodeController.text.trim().toUpperCase();
       final res = await ApiClient.post(ApiEndpoints.register, data: {
         'email': email,
         'phone': phone.isNotEmpty ? phone : null,
         'first_name': name.isNotEmpty ? name : email.split('@')[0],
         'password': pwd,
+        if (refCode.isNotEmpty) 'referral_code': refCode,
       });
 
       final access = res.data['access'];

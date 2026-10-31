@@ -47,4 +47,12 @@ class ApiEndpoints {
   static const String tryonGenerate = '/virtual-tryon/generate/';
   static const String tryonJobs = '/virtual-tryon/jobs/';
   static const String tryonHistory = '/virtual-tryon/history/';
+
+  // Referrals & Rewards
+  static const String referralMyCode = '/referrals/my-code/';
+  static const String referralMyStats = '/referrals/my-stats/';
+  static const String referralMyReferrals = '/referrals/my-referrals/';
+  static const String referralValidate = '/referrals/validate/';
+  static const String referralApply = '/referrals/apply/';
+  static const String referralRewards = '/referrals/rewards/';
 }
