@@ -31,6 +31,8 @@ class AppPages {
     GetPage(name: AppRoutes.splash, page: () => const SplashView()),
     GetPage(name: AppRoutes.onboarding, page: () => const OnboardingView()),
     GetPage(name: AppRoutes.login, page: () => const LoginView()),
+    GetPage(name: AppRoutes.register, page: () => const LoginView()),
+    GetPage(name: '/register', page: () => const LoginView()),
     GetPage(name: AppRoutes.forgotPassword, page: () => const ForgotPasswordView()),
     GetPage(name: AppRoutes.otp, page: () => const OtpVerificationView()),
     GetPage(name: AppRoutes.home, page: () => const MainNavigationView()),

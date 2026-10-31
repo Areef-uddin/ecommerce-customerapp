@@ -23,9 +23,9 @@ class LoginView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 20),
-                const Text(
-                  'Welcome Back',
-                  style: TextStyle(
+                Text(
+                  controller.isLoginTab.value ? 'Welcome Back' : 'Create Account',
+                  style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -33,9 +33,11 @@ class LoginView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Login to continue shopping',
-                  style: TextStyle(
+                Text(
+                  controller.isLoginTab.value
+                      ? 'Login to continue shopping'
+                      : 'Sign up to start shopping & earn rewards',
+                  style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,
                   ),

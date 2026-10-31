@@ -29,9 +29,23 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    final ref = Get.parameters['ref'];
+    String? ref = Get.parameters['ref'];
+    if (ref == null || ref.isEmpty) {
+      ref = Uri.base.queryParameters['ref'];
+    }
+    if ((ref == null || ref.isEmpty) && Uri.base.fragment.contains('ref=')) {
+      try {
+        final frag = Uri.base.fragment;
+        final idx = frag.indexOf('ref=');
+        if (idx != -1) {
+          ref = frag.substring(idx + 4).split('&')[0];
+        }
+      } catch (_) {}
+    }
     if (ref != null && ref.isNotEmpty) {
       referralCodeController.text = ref.trim().toUpperCase();
+      isLoginTab.value = false;
+    } else if (Get.currentRoute.contains('register') || Uri.base.fragment.contains('register')) {
       isLoginTab.value = false;
     }
   }

@@ -5,6 +5,7 @@ import 'core/routes/app_pages.dart';
 import 'core/services/fcm_service.dart';
 import 'core/storage/storage_service.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/views/login_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +36,7 @@ class StyleHubApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       initialRoute: AppPages.initial,
       getPages: AppPages.routes,
+      unknownRoute: GetPage(name: '/not-found', page: () => const LoginView()),
       defaultTransition: Transition.cupertino,
     );
   }
