@@ -43,48 +43,53 @@ class MainNavigationView extends StatelessWidget {
           ),
           child: SafeArea(
             top: false,
-            child: SizedBox(
-              height: 64,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(
-                    index: 0,
-                    icon: Icons.home_rounded,
-                    inactiveIcon: Icons.home_outlined,
-                    label: 'Home',
-                    controller: controller,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: SizedBox(
+                  height: 64,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildNavItem(
+                        index: 0,
+                        icon: Icons.home_rounded,
+                        inactiveIcon: Icons.home_outlined,
+                        label: 'Home',
+                        controller: controller,
+                      ),
+                      _buildNavItem(
+                        index: 1,
+                        icon: Icons.grid_view_rounded,
+                        inactiveIcon: Icons.grid_view_outlined,
+                        label: 'Categories',
+                        controller: controller,
+                      ),
+                      _buildNavItem(
+                        index: 2,
+                        icon: Icons.favorite_rounded,
+                        inactiveIcon: Icons.favorite_border_rounded,
+                        label: 'Wishlist',
+                        controller: controller,
+                      ),
+                      _buildNavItem(
+                        index: 3,
+                        icon: Icons.shopping_bag_rounded,
+                        inactiveIcon: Icons.shopping_bag_outlined,
+                        label: 'Cart',
+                        badgeCount: Get.isRegistered<CartController>() ? Get.find<CartController>().totalQuantity : 0,
+                        controller: controller,
+                      ),
+                      _buildNavItem(
+                        index: 4,
+                        icon: Icons.person_rounded,
+                        inactiveIcon: Icons.person_outline_rounded,
+                        label: 'Profile',
+                        controller: controller,
+                      ),
+                    ],
                   ),
-                  _buildNavItem(
-                    index: 1,
-                    icon: Icons.grid_view_rounded,
-                    inactiveIcon: Icons.grid_view_outlined,
-                    label: 'Categories',
-                    controller: controller,
-                  ),
-                  _buildNavItem(
-                    index: 2,
-                    icon: Icons.favorite_rounded,
-                    inactiveIcon: Icons.favorite_border_rounded,
-                    label: 'Wishlist',
-                    controller: controller,
-                  ),
-                  _buildNavItem(
-                    index: 3,
-                    icon: Icons.shopping_bag_rounded,
-                    inactiveIcon: Icons.shopping_bag_outlined,
-                    label: 'Cart',
-                    badgeCount: Get.isRegistered<CartController>() ? Get.find<CartController>().totalQuantity : 0,
-                    controller: controller,
-                  ),
-                  _buildNavItem(
-                    index: 4,
-                    icon: Icons.person_rounded,
-                    inactiveIcon: Icons.person_outline_rounded,
-                    label: 'Profile',
-                    controller: controller,
-                  ),
-                ],
+                ),
               ),
             ),
           ),

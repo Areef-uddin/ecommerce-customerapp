@@ -72,14 +72,11 @@ class _PaymentMethodViewState extends State<PaymentMethodView> {
             final selectedMethod =
                 checkoutController.selectedPaymentMethod.value;
 
-            return Padding(
+            return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: ListView(
-                      children: [
                         // 1. Security Banner (Exact Image 3 Screen 2)
                         Container(
                           padding: const EdgeInsets.all(14),
@@ -161,9 +158,7 @@ class _PaymentMethodViewState extends State<PaymentMethodView> {
                               checkoutController.selectedPaymentMethod.value =
                                   'Cash on Delivery',
                         ),
-                      ],
-                    ),
-                  ),
+                  const SizedBox(height: 28),
 
                   // Bottom Summary & Dark Navy Button (Exact Image 3 Screen 2)
                   Container(
@@ -319,12 +314,12 @@ class _PaymentMethodViewState extends State<PaymentMethodView> {
                                     ),
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
+                  ],
+                ),
+              );
           }),
         ),
       ),

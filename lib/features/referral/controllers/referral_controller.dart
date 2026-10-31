@@ -67,8 +67,20 @@ class ReferralController extends GetxController {
     );
   }
 
+  String getCustomerAppReferralLink() {
+    final code = stats.value?.referralCode ?? '';
+    String link = stats.value?.referralLink ?? '';
+    if (link.isEmpty || link.contains('onrender.com') || link.contains(':8000')) {
+      final origin = Uri.base.origin.isNotEmpty && !Uri.base.origin.contains('8000') && !Uri.base.origin.contains('onrender.com')
+          ? Uri.base.origin
+          : 'https://ecommerce-customerapp.vercel.app';
+      link = '$origin/#/register?ref=$code';
+    }
+    return link;
+  }
+
   void copyReferralLink() {
-    final link = stats.value?.referralLink ?? '';
+    final link = getCustomerAppReferralLink();
     if (link.isEmpty) return;
     Clipboard.setData(ClipboardData(text: link));
     Get.snackbar(
@@ -85,7 +97,7 @@ class ReferralController extends GetxController {
 
   Future<void> shareOnWhatsApp() async {
     final code = stats.value?.referralCode ?? '';
-    final link = stats.value?.referralLink ?? 'https://ecommerce-customerapp.vercel.app';
+    final link = getCustomerAppReferralLink();
 
     final message = "Hey! I'm using this awesome shopping app. Join using my referral link and enjoy the experience!\n\n"
         "My Referral Code: $code\n"

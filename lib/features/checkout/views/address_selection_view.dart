@@ -46,55 +46,51 @@ class AddressSelectionView extends StatelessWidget {
               return const Center(child: CircularProgressIndicator(color: AppColors.primary));
             }
 
-            return Padding(
+            return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: ListView(
-                      children: [
-                        ...controller.addresses.map((addr) => _buildAddressCard(context, addr, controller)),
-                        const SizedBox(height: 16),
+                  ...controller.addresses.map((addr) => _buildAddressCard(context, addr, controller)),
+                  const SizedBox(height: 16),
 
-                        // + Add New Address Dashed Outline Button (Matching Image 3 Screen 1)
-                        GestureDetector(
-                          onTap: () => _showAddAddressDialog(context, controller),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: const Color(0xFFE11D48),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.add, color: Color(0xFFE11D48), size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '+ Add New Address',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFFE11D48),
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
+                  // + Add New Address Dashed Outline Button (Matching Image 3 Screen 1)
+                  GestureDetector(
+                    onTap: () => _showAddAddressDialog(context, controller),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(0xFFE11D48),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.add, color: Color(0xFFE11D48), size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            '+ Add New Address',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFFE11D48),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
 
-                  // Bottom Continue Button: Dark Navy [ Continue  → ] (Matching Image 3 Screen 1)
-                  Container(
+                  const SizedBox(height: 24),
+
+                  // Continue Button: Dark Navy [ Continue  → ]
+                  SizedBox(
                     width: double.infinity,
-                    padding: const EdgeInsets.only(top: 12, bottom: 16),
                     child: ElevatedButton(
                       onPressed: controller.selectedAddressId.value != 0
                           ? () => Get.toNamed('/checkout-payment')
@@ -124,6 +120,7 @@ class AddressSelectionView extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             );
