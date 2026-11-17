@@ -69,12 +69,22 @@ class ReferralController extends GetxController {
 
   String getCustomerAppReferralLink() {
     final code = stats.value?.referralCode ?? '';
+    if (code.isEmpty) return '';
+
+    try {
+      final origin = Uri.base.origin;
+      if (origin.isNotEmpty &&
+          !origin.contains('localhost') &&
+          !origin.contains('127.0.0.1') &&
+          !origin.contains(':8000') &&
+          !origin.contains('onrender.com')) {
+        return '$origin/#/register?ref=$code';
+      }
+    } catch (_) {}
+
     String link = stats.value?.referralLink ?? '';
-    if (link.isEmpty || link.contains('onrender.com') || link.contains(':8000')) {
-      final origin = Uri.base.origin.isNotEmpty && !Uri.base.origin.contains('8000') && !Uri.base.origin.contains('onrender.com')
-          ? Uri.base.origin
-          : 'https://ecommerce-customerapp.vercel.app';
-      link = '$origin/#/register?ref=$code';
+    if (link.isEmpty || link.contains('onrender.com') || link.contains('vercel.app') || link.contains(':8000')) {
+      link = 'http://157.15.203.209/#/register?ref=$code';
     }
     return link;
   }
