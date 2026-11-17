@@ -13,7 +13,8 @@ class ReferralProfileCard extends StatelessWidget {
 
     return Obx(() {
       final stats = controller.stats.value;
-      final code = stats?.referralCode ?? '---';
+      final activeCode = controller.getActiveReferralCode();
+      final code = activeCode.isNotEmpty ? activeCode : '---';
       final totalInvites = stats?.totalInvites ?? 0;
       final successful = stats?.successfulReferrals ?? 0;
       final pending = stats?.pendingReferrals ?? 0;

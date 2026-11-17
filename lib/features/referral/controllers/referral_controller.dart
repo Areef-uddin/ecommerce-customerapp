@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/storage_service.dart';
 import '../models/referral_model.dart';
 
 class ReferralController extends GetxController {
@@ -51,24 +52,20 @@ class ReferralController extends GetxController {
     }
   }
 
-  void copyReferralCode() {
-    final code = stats.value?.referralCode ?? '';
-    if (code.isEmpty) return;
-    Clipboard.setData(ClipboardData(text: code));
-    Get.snackbar(
-      'Copied to Clipboard',
-      'Referral code $code copied successfully!',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color(0xFF0F172A),
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-    );
+  String getActiveReferralCode() {
+    String code = stats.value?.referralCode ?? '';
+    if (code.isNotEmpty && code != '---') return code;
+
+    // Check stored user data
+    final user = StorageService.getUser();
+    if (user != null && user['referral_code'] != null && user['referral_code'].toString().isNotEmpty) {
+      return user['referral_code'].toString();
+    }
+    return '';
   }
 
-  String getCustomerAppReferralLink() {
-    final code = stats.value?.referralCode ?? '';
+  String getCustomerAppReferralLink([String? explicitCode]) {
+    final code = (explicitCode != null && explicitCode.isNotEmpty) ? explicitCode : getActiveReferralCode();
     if (code.isEmpty) return '';
 
     try {
@@ -89,6 +86,31 @@ class ReferralController extends GetxController {
     return link;
   }
 
+  void copyReferralCode() {
+    final code = getActiveReferralCode();
+    if (code.isEmpty) {
+      Get.snackbar(
+        'Login Required',
+        'Please login to view and copy your referral code.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFE11D48),
+        colorText: Colors.white,
+      );
+      return;
+    }
+    Clipboard.setData(ClipboardData(text: code));
+    Get.snackbar(
+      'Copied to Clipboard',
+      'Referral code $code copied successfully!',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: const Color(0xFF0F172A),
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+    );
+  }
+
   void copyReferralLink() {
     final link = getCustomerAppReferralLink();
     if (link.isEmpty) return;
@@ -106,8 +128,47 @@ class ReferralController extends GetxController {
   }
 
   Future<void> shareOnWhatsApp() async {
-    final code = stats.value?.referralCode ?? '';
-    final link = getCustomerAppReferralLink();
+    // 1. Prompt login if user is not authenticated
+    if (!StorageService.isLoggedIn) {
+      Get.snackbar(
+        'Login Required',
+        'Please login or create an account to share your unique referral link & earn rewards!',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFE11D48),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      Get.toNamed('/login');
+      return;
+    }
+
+    // 2. Retrieve referral code from stats or cached user profile
+    String code = getActiveReferralCode();
+    if (code.isEmpty) {
+      Get.snackbar(
+        'Generating Link...',
+        'Retrieving your referral code, please wait a moment.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF0F172A),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 1),
+      );
+      await fetchStats();
+      code = getActiveReferralCode();
+    }
+
+    if (code.isEmpty) {
+      Get.snackbar(
+        'Referral Notice',
+        'Could not load your referral code. Please pull to refresh or check your connection.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFE11D48),
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final link = getCustomerAppReferralLink(code);
 
     final message = "Hey! I'm using this awesome shopping app. Join using my referral link and enjoy the experience!\n\n"
         "My Referral Code: $code\n"
