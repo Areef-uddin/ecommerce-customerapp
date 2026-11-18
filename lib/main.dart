@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:get/get.dart';
 import 'core/routes/app_pages.dart';
 import 'core/services/fcm_service.dart';
@@ -9,6 +10,7 @@ import 'features/auth/views/login_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy();
   
   // Set status bar styling
   SystemChrome.setSystemUIOverlayStyle(
