@@ -13,6 +13,12 @@ class ProfileController extends GetxController {
   final userPhone = ''.obs;
   final isUpdating = false.obs;
 
+  // Dynamic Store Concierge Settings from Backend
+  final storePhone = '+91 80 4567 8900'.obs;
+  final storeEmail = 'concierge@stylehub.com'.obs;
+  final storeAddress = '100 Feet Rd, Indiranagar, Bengaluru'.obs;
+  final storeHours = 'Mon - Sat: 09:00 AM - 08:00 PM'.obs;
+
   // Editing Controllers
   final nameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
@@ -23,6 +29,28 @@ class ProfileController extends GetxController {
     super.onInit();
     loadLocalUser();
     fetchProfile();
+    fetchStoreSettings();
+  }
+
+  Future<void> fetchStoreSettings() async {
+    try {
+      final res = await ApiClient.get(ApiEndpoints.storeSettings);
+      if (res.data is Map) {
+        final d = Map<String, dynamic>.from(res.data);
+        if (d['support_phone'] != null && d['support_phone'].toString().isNotEmpty) {
+          storePhone.value = d['support_phone'].toString();
+        }
+        if (d['support_email'] != null && d['support_email'].toString().isNotEmpty) {
+          storeEmail.value = d['support_email'].toString();
+        }
+        if (d['flagship_address'] != null && d['flagship_address'].toString().isNotEmpty) {
+          storeAddress.value = d['flagship_address'].toString();
+        }
+        if (d['working_hours'] != null && d['working_hours'].toString().isNotEmpty) {
+          storeHours.value = d['working_hours'].toString();
+        }
+      }
+    } catch (_) {}
   }
 
   @override

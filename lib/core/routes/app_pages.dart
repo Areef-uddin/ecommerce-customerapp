@@ -23,6 +23,7 @@ import '../../features/support/views/help_support_view.dart';
 import '../../features/notifications/views/notifications_view.dart';
 import '../../features/virtual_tryon/views/virtual_tryon_view.dart';
 import '../../features/referral/views/referral_history_view.dart';
+import '../../features/support/views/policy_page_view.dart';
 
 class AppPages {
   static const initial = AppRoutes.splash;
@@ -53,5 +54,6 @@ class AppPages {
     GetPage(name: AppRoutes.notifications, page: () => const NotificationsView()),
     GetPage(name: AppRoutes.virtualTryOn, page: () => const VirtualTryOnView()),
     GetPage(name: AppRoutes.referralHistory, page: () => const ReferralHistoryView()),
+    GetPage(name: AppRoutes.policyPage, page: () => const PolicyPageView()),
   ];
 }

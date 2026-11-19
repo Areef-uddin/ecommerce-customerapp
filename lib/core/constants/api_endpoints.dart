@@ -1,9 +1,8 @@
 class ApiEndpoints {
-  static const String serverHost = 'https://ecommerce-backened-jsiy.onrender.com';
+  static const String serverHost = 'http://157.15.203.209';
   static const String _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL');
 
-  // The embedded browser cannot reach the host machine's loopback address.
-  // Use Render by default and allow an explicit local override for CLI runs.
+  // VPS Production backend host (http://157.15.203.209)
   static String get baseUrl => _apiBaseUrlOverride.isNotEmpty
       ? _apiBaseUrlOverride
       : '$serverHost/api';
@@ -37,11 +36,16 @@ class ApiEndpoints {
   static const String razorpayVerifyPayment = '/orders/orders/verify_razorpay_payment/';
   static const String razorpayCancelPayment = '/orders/orders/record_cancelled_payment/';
 
-  // Common
+  // Common & Footer
   static const String banners = '/common/banners/';
   static const String notifications = '/common/notifications/';
   static const String faqs = '/common/faqs/';
   static const String contact = '/common/contact/';
+  static const String footer = '/common/footer/';
+  static const String storeSettings = '/common/store-settings/';
+  static const String footerSections = '/common/footer-sections/';
+  static const String policies = '/common/policies/';
+  static const String newsletter = '/common/newsletter/';
 
   // Virtual Try-On & AI Visualization
   static const String tryonGenerate = '/virtual-tryon/generate/';

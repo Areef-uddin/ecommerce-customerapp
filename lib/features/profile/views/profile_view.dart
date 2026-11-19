@@ -439,25 +439,27 @@ class ProfileView extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '+91 98765 43210',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
+                            Expanded(
+                              child: Obx(
+                                () => Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      controller.storePhone.value,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    'Mon - Sat: 09:00 AM - 08:00 PM',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 11,
+                                    Text(
+                                      controller.storeHours.value,
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 11,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -478,25 +480,27 @@ class ProfileView extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'concierge@stylehub.com',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
+                            Expanded(
+                              child: Obx(
+                                () => Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      controller.storeEmail.value,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    'VIP Priority Support',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 11,
+                                    const Text(
+                                      'VIP Priority Support',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 11,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -517,25 +521,27 @@ class ProfileView extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '100 Feet Rd, Indiranagar, Bengaluru',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
+                            Expanded(
+                              child: Obx(
+                                () => Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      controller.storeAddress.value,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    'Open today: 10:00 AM - 10:00 PM',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 11,
+                                    const Text(
+                                      'Flagship Styling Salon',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 11,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ],

@@ -7,6 +7,7 @@ import '../../notifications/controllers/notifications_controller.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../profile/widgets/user_avatar.dart';
 import '../controllers/home_controller.dart';
+import '../widgets/app_footer.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -74,6 +75,7 @@ class HomeView extends StatelessWidget {
                       _buildProductGrid(context, controller),
 
                       const SizedBox(height: 32),
+                      const AppFooter(),
                     ],
                   ),
                 ),

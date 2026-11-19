@@ -23,4 +23,5 @@ abstract class AppRoutes {
   static const notifications = '/notifications';
   static const virtualTryOn = '/virtual-tryon';
   static const referralHistory = '/referral-history';
+  static const policyPage = '/policies/:slug';
 }
