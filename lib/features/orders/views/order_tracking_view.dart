@@ -317,11 +317,6 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
                     if (hasReturns && _showReturnTracking)
                       _buildReturnTrackingSection(order)
                     else ...[
-                      // 1. DEMO TRACKING MODE Banner (Requirement 7)
-                      if (isDemo) _buildDemoModeBanner(),
-
-                      const SizedBox(height: 14),
-
                       // 2. Tracking ID & Carrier Header Card (Requirement 3 & 7)
                       _buildTrackingHeaderCard(
                         trackingNumber,
@@ -368,51 +363,6 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
           ),
         );
       }),
-    );
-  }
-
-  Widget _buildDemoModeBanner() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFDE68A)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF59E0B),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.bolt, color: Colors.white, size: 14),
-          ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'LIVE TRACKING ACTIVE',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                    color: Color(0xFFB45309),
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                SizedBox(height: 1),
-                Text(
-                  'Real-time courier milestones synced with StyleHub logistics hub',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF92400E)),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 

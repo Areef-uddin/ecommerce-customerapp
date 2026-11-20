@@ -226,17 +226,17 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.amber.shade100,
+                                          color: const Color(0xFFDCFCE7),
                                           borderRadius: BorderRadius.circular(
                                             4,
                                           ),
                                         ),
                                         child: const Text(
-                                          'DEMO',
+                                          'EXPRESS',
                                           style: TextStyle(
                                             fontSize: 9,
                                             fontWeight: FontWeight.w800,
-                                            color: Color(0xFFB45309),
+                                            color: Color(0xFF15803D),
                                           ),
                                         ),
                                       ),
