@@ -624,6 +624,106 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                       ),
                       const SizedBox(height: 24),
                     ],
+
+                    // Refund Banner if order is cancelled and refund is active
+                    if (order.paymentStatus == 'Refund Pending' || order.paymentStatus == 'Refunded') ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        margin: const EdgeInsets.only(bottom: 18),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0FDF4),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF86EFAC)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.verified, color: Color(0xFF16A34A), size: 24),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    order.paymentStatus == 'Refunded' ? 'Refund Processed' : 'Refund Pending',
+                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF166534)),
+                                  ),
+                                  Text(
+                                    '₹${order.totalAmount.toStringAsFixed(2)} returned to ${order.paymentMethod}.',
+                                    style: const TextStyle(fontSize: 11, color: Color(0xFF15803D)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Order Cancellation Button if placed/processing
+                    if (order.orderStatus == 'Order Placed' || order.orderStatus == 'Processing') ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFFECACA)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Cancel Order',
+                                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF991B1B)),
+                                  ),
+                                  Text(
+                                    order.paymentStatus == 'Paid'
+                                        ? 'Full refund of ₹${order.totalAmount.toStringAsFixed(0)} will be initiated'
+                                        : 'Cancel order before shipping',
+                                    style: const TextStyle(fontSize: 11, color: Color(0xFFB91C1C)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            OutlinedButton(
+                              onPressed: () {
+                                Get.defaultDialog(
+                                  title: 'Cancel Order',
+                                  titleStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                                  middleText: order.paymentStatus == 'Paid'
+                                      ? 'Are you sure you want to cancel this order? Your full refund of ₹${order.totalAmount.toStringAsFixed(2)} will be refunded to your ${order.paymentMethod}.'
+                                      : 'Are you sure you want to cancel Order #${order.orderNumber}?',
+                                  textConfirm: 'Yes, Cancel',
+                                  textCancel: 'Keep Order',
+                                  confirmTextColor: Colors.white,
+                                  buttonColor: const Color(0xFFDC2626),
+                                  onConfirm: () async {
+                                    Get.back();
+                                    await controller.cancelOrder(order.id);
+                                  },
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFDC2626),
+                                side: const BorderSide(color: Color(0xFFDC2626)),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              ),
+                              child: Obx(
+                                () => controller.isCancellingOrder.value
+                                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFDC2626)))
+                                    : const Text('Cancel Order', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     // Vertical Tracking Stepper matching Screen 16
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

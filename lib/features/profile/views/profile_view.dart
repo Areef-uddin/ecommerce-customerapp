@@ -363,6 +363,18 @@ class ProfileView extends StatelessWidget {
                           color: Color(0xFFF3F4F6),
                         ),
                         _buildMenuTile(
+                          icon: Icons.assignment_return_outlined,
+                          iconColor: const Color(0xFF10B981),
+                          title: 'Returns & Refunds',
+                          subtitle: 'Track return pickups, approvals & bank/UPI refunds',
+                          onTap: () => Get.toNamed('/return-refund'),
+                        ),
+                        const Divider(
+                          height: 1,
+                          indent: 56,
+                          color: Color(0xFFF3F4F6),
+                        ),
+                        _buildMenuTile(
                           icon: Icons.favorite_border,
                           iconColor: const Color(0xFFE91E63),
                           title: 'My Saved Wishlist',

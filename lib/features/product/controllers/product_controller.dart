@@ -101,16 +101,18 @@ class ProductController extends GetxController {
         colorName = product.colors[selectedColorIndex.value].name;
       }
 
-      await ApiClient.post(ApiEndpoints.cart, data: {
+      final res = await ApiClient.post(ApiEndpoints.cart, data: {
         'product_id': product.id,
         'quantity': quantity.value,
         'size': selectedSize.value,
         'color': colorName,
       });
 
-      // Synchronize CartController immediately
-      if (Get.isRegistered<CartController>()) {
-        await Get.find<CartController>().fetchCart();
+      // Synchronize CartController instantly from returned payload with 0 extra network calls
+      if (Get.isRegistered<CartController>() && res.data is Map<String, dynamic>) {
+        Get.find<CartController>().updateFromPayload(res.data as Map<String, dynamic>);
+      } else if (Get.isRegistered<CartController>()) {
+        Get.find<CartController>().fetchCart(silent: true);
       }
 
       Get.snackbar(
@@ -119,6 +121,7 @@ class ProductController extends GetxController {
         backgroundColor: const Color(0xFF10B981),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
       );
     } catch (e) {
       Get.snackbar('Error', 'Failed to add item to bag');
@@ -175,20 +178,18 @@ class ProductController extends GetxController {
         colorName = product.colors[selectedColorIndex.value].name;
       }
 
-      // Clear existing cart so Buy Now checks out ONLY this product with selected quantity
-      try {
-        await ApiClient.delete(ApiEndpoints.clearCart);
-      } catch (_) {}
-
-      await ApiClient.post(ApiEndpoints.cart, data: {
+      // Fast Atomic Buy Now in 1 single network call
+      final res = await ApiClient.post('${ApiEndpoints.cart}buy_now/', data: {
         'product_id': product.id,
         'quantity': quantity.value,
         'size': selectedSize.value,
         'color': colorName,
       });
 
-      if (Get.isRegistered<CartController>()) {
-        await Get.find<CartController>().fetchCart();
+      if (Get.isRegistered<CartController>() && res.data is Map<String, dynamic>) {
+        Get.find<CartController>().updateFromPayload(res.data as Map<String, dynamic>);
+      } else if (Get.isRegistered<CartController>()) {
+        await Get.find<CartController>().fetchCart(silent: true);
       }
 
       Get.toNamed('/checkout-address');

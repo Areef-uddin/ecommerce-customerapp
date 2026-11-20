@@ -27,6 +27,26 @@ class ReturnRefundView extends StatelessWidget {
       orderId = controller.currentOrder.value!.id;
     }
 
+    if (orderId == 0) {
+      final returnOrder = controller.orders.firstWhereOrNull((o) => o.returns.isNotEmpty) ??
+          controller.orders.firstWhereOrNull((o) => o.returnEligible) ??
+          (controller.orders.isNotEmpty ? controller.orders.first : null);
+      if (returnOrder != null) {
+        orderId = returnOrder.id;
+        controller.currentOrder.value = returnOrder;
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await controller.fetchOrders();
+          final loaded = controller.orders.firstWhereOrNull((o) => o.returns.isNotEmpty) ??
+              controller.orders.firstWhereOrNull((o) => o.returnEligible) ??
+              (controller.orders.isNotEmpty ? controller.orders.first : null);
+          if (loaded != null) {
+            controller.currentOrder.value = loaded;
+          }
+        });
+      }
+    }
+
     if (orderId > 0 &&
         (controller.currentOrder.value == null ||
             controller.currentOrder.value!.id != orderId)) {

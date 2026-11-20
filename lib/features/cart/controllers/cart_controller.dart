@@ -44,7 +44,21 @@ class CartController extends GetxController {
     super.onClose();
   }
 
-  Future<void> fetchCart() async {
+  void updateFromPayload(Map<String, dynamic> data) {
+    if (data['cart_items'] is List) {
+      cartItems.assignAll(
+        (data['cart_items'] as List)
+            .map((i) => CartItemModel.fromJson(i))
+            .toList(),
+      );
+    }
+    if (data['summary'] is Map<String, dynamic>) {
+      cartSummary.value = CartSummaryModel.fromJson(data['summary']);
+    }
+    isLoading.value = false;
+  }
+
+  Future<void> fetchCart({bool silent = false}) async {
     final token = StorageService.getAccessToken();
     if (token == null || token.isEmpty) {
       cartItems.clear();
@@ -53,7 +67,7 @@ class CartController extends GetxController {
       return;
     }
     try {
-      isLoading.value = true;
+      if (!silent) isLoading.value = true;
       final res = await ApiClient.get(ApiEndpoints.cart);
       // The server is the source of truth: an empty response must clear any
       // stale in-memory items left from a previous session or checkout.
@@ -74,7 +88,7 @@ class CartController extends GetxController {
       }
       debugPrint('Error fetching cart: $e');
     } finally {
-      isLoading.value = false;
+      if (!silent) isLoading.value = false;
     }
   }
 

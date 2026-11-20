@@ -29,6 +29,7 @@ class OrdersController extends GetxController {
   final isSubmittingReturn = false.obs;
   final selectedReturnItemId = RxnInt();
   final isBuyingAgain = false.obs;
+  final isCancellingOrder = false.obs;
   bool _isFetchingOrders = false;
   int _ordersRequestVersion = 0;
 
@@ -41,8 +42,8 @@ class OrdersController extends GetxController {
     } else {
       isLoading.value = false;
     }
-    // Auto-refresh orders every 10 seconds only when user is authenticated
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+    // Periodic refresh every 30 seconds only when user is authenticated
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       final t = StorageService.getAccessToken();
       if (t != null && t.isNotEmpty) {
         fetchOrders(silent: true);
@@ -339,6 +340,53 @@ class OrdersController extends GetxController {
       Get.snackbar('Buy Again unavailable', message);
     } finally {
       isBuyingAgain.value = false;
+    }
+  }
+
+  Future<bool> cancelOrder(int orderId) async {
+    if (isCancellingOrder.value) return false;
+    isCancellingOrder.value = true;
+    try {
+      final res = await ApiClient.post('${ApiEndpoints.orders}$orderId/cancel/');
+      if (res.data is Map<String, dynamic>) {
+        currentOrder.value = OrderModel.fromJson(res.data as Map<String, dynamic>);
+      }
+      await Future.wait([
+        fetchOrderDetail(orderId, silent: true),
+        fetchOrders(silent: true),
+      ]);
+
+      final order = currentOrder.value;
+      final wasPaid = order?.paymentStatus == 'Refund Pending' || order?.paymentStatus == 'Refunded';
+      final msg = wasPaid
+          ? 'Order cancelled. Refund of ₹${order?.totalAmount.toStringAsFixed(0)} initiated.'
+          : 'Order cancelled successfully.';
+
+      Get.snackbar(
+        'Order Cancelled',
+        msg,
+        backgroundColor: const Color(0xFFEF4444),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Error cancelling order: $e');
+      var message = 'Could not cancel order. Please contact support.';
+      if (e is DioException && e.response?.data is Map) {
+        final detail = (e.response!.data as Map)['detail'];
+        if (detail is String && detail.isNotEmpty) message = detail;
+      }
+      Get.snackbar(
+        'Cancellation Failed',
+        message,
+        backgroundColor: const Color(0xFFDC2626),
+        colorText: Colors.white,
+      );
+      return false;
+    } finally {
+      isCancellingOrder.value = false;
     }
   }
 }
